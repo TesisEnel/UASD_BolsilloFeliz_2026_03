@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BolsilloFeliz.Api/BolsilloFeliz.Api.csproj" />
+    <Project Path="src/BolsilloFeliz.Domain/BolsilloFeliz.Domain.csproj" />
+    <Project Path="src/BolsilloFeliz.Infrastructure/BolsilloFeliz.Infrastructure.csproj" />
+  </Folder>
+</Solution>
