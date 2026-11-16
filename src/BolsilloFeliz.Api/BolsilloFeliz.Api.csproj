@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BolsilloFeliz.Application\BolsilloFeliz.Application.csproj" />
     <ProjectReference Include="..\BolsilloFeliz.Infrastructure\BolsilloFeliz.Infrastructure.csproj" />
   </ItemGroup>
 
