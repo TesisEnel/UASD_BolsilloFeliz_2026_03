@@ -1,17 +1,16 @@
+using BolsilloFeliz.Application;
 using BolsilloFeliz.Infrastructure;
 using Scalar.AspNetCore;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
-
+builder.Services.AddApplication();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
-
 
 app.MapOpenApi();
 app.MapScalarApiReference();
