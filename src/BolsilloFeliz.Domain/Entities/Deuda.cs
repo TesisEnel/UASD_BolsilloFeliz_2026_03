@@ -29,7 +29,7 @@ public partial class Deuda
 
     public virtual ICollection<DetalleDeuda> DetallesDeuda { get; set; } = new List<DetalleDeuda>();
 
-    public virtual Entidade Entidade { get; set; } = null!;
+    public virtual Entidad Entidade { get; set; } = null!;
 
     public virtual Usuario IdUsuarioNavigation { get; set; } = null!;
 

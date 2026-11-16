@@ -29,7 +29,7 @@ public partial class Prestamo
 
     public virtual ICollection<DetallePrestamo> DetallesPrestamos { get; set; } = new List<DetallePrestamo>();
 
-    public virtual Entidade Entidade { get; set; } = null!;
+    public virtual Entidad Entidade { get; set; } = null!;
 
     public virtual Usuario IdUsuarioNavigation { get; set; } = null!;
 
