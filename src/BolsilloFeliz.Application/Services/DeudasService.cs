@@ -13,95 +13,105 @@ public class DeudasService(
 {
     public async Task<Result> Guardar(DeudaDto dto)
     {
-        if (!await Existe(dto.IdDeuda))
-            return Result.Success(await Insertar(dto));
-
-        return Result.Success(await Modificar(dto));
-    }
-
-    private async Task<bool> Existe(int id)
-    {
         await using var contexto = await contextFactory.CreateDbContextAsync();
-        return await contexto.Deudas.AnyAsync(x => x.IdDeuda == id);
-    }
 
-    private async Task<bool> Insertar(DeudaDto dto)
-    {
-        await using var contexto = await contextFactory.CreateDbContextAsync();
-        contexto.Deudas.Add(new Deuda
+        var deuda = await contexto.Deudas.FirstOrDefaultAsync(deuda => deuda.IdDeuda == dto.IdDeuda);
+
+        if (deuda is null)
         {
-            IdUsuario = dto.IdUsuario,
-            IdEntidad = dto.IdEntidad,
-            IdTransaccionDesembolso = dto.IdTransaccionDesembolso,
-            Nombre = dto.Nombre,
-            MontoOriginal = dto.MontoOriginal,
-            FechaDeuda = dto.FechaDeuda,
-            FechaVencimiento = dto.FechaVencimiento,
-            CuotaMensual = dto.CuotaMensual,
-            Estado = dto.Estado,
-            Descripcion = dto.Descripcion
-        });
-        return await contexto.SaveChangesAsync() > 0;
-    }
+            deuda = new Deuda
+            {
+                IdUsuario = dto.IdUsuario,
+                IdEntidad = dto.IdEntidad,
+                IdTransaccionDesembolso = dto.IdTransaccionDesembolso,
+                Nombre = dto.Nombre,
+                MontoOriginal = dto.MontoOriginal,
+                FechaDeuda = dto.FechaDeuda,
+                FechaVencimiento = dto.FechaVencimiento,
+                CuotaMensual = dto.CuotaMensual,
+                Estado = dto.Estado,
+                Descripcion = dto.Descripcion
+            };
 
-    private async Task<bool> Modificar(DeudaDto dto)
-    {
-        await using var contexto = await contextFactory.CreateDbContextAsync();
-        var entidad = await contexto.Deudas.FindAsync(dto.IdDeuda);
-        if (entidad is null)
-            return false;
+            contexto.Deudas.Add(deuda);
+        }
+        else
+        {
+            deuda.IdEntidad = dto.IdEntidad;
+            deuda.IdTransaccionDesembolso = dto.IdTransaccionDesembolso;
+            deuda.Nombre = dto.Nombre;
+            deuda.MontoOriginal = dto.MontoOriginal;
+            deuda.FechaDeuda = dto.FechaDeuda;
+            deuda.FechaVencimiento = dto.FechaVencimiento;
+            deuda.CuotaMensual = dto.CuotaMensual;
+            deuda.Estado = dto.Estado;
+            deuda.Descripcion = dto.Descripcion;
+        }
 
-        // IdUsuario no se modifica: un registro no cambia de dueño
-        entidad.IdEntidad = dto.IdEntidad;
-        entidad.IdTransaccionDesembolso = dto.IdTransaccionDesembolso;
-        entidad.Nombre = dto.Nombre;
-        entidad.MontoOriginal = dto.MontoOriginal;
-        entidad.FechaDeuda = dto.FechaDeuda;
-        entidad.FechaVencimiento = dto.FechaVencimiento;
-        entidad.CuotaMensual = dto.CuotaMensual;
-        entidad.Estado = dto.Estado;
-        entidad.Descripcion = dto.Descripcion;
-
-        return await contexto.SaveChangesAsync() > 0;
+        return Result.Success(await contexto.SaveChangesAsync() > 0);
     }
 
     public async Task<Result<DeudaDto?>> Buscar(int id)
     {
         await using var contexto = await contextFactory.CreateDbContextAsync();
-        return await Proyectar(contexto.Deudas.AsNoTracking())
-            .FirstOrDefaultAsync(x => x.IdDeuda == id);
+
+        var deuda = await contexto.Deudas
+            .AsNoTracking()
+            .FirstOrDefaultAsync(deuda => deuda.IdDeuda == id);
+
+        if (deuda is null)
+            return (DeudaDto?)null;
+
+        return new DeudaDto
+        {
+            IdDeuda = deuda.IdDeuda,
+            IdUsuario = deuda.IdUsuario,
+            IdEntidad = deuda.IdEntidad,
+            IdTransaccionDesembolso = deuda.IdTransaccionDesembolso,
+            Nombre = deuda.Nombre,
+            MontoOriginal = deuda.MontoOriginal,
+            FechaDeuda = deuda.FechaDeuda,
+            FechaVencimiento = deuda.FechaVencimiento,
+            CuotaMensual = deuda.CuotaMensual,
+            Estado = deuda.Estado,
+            Descripcion = deuda.Descripcion
+        };
     }
 
     public async Task<Result<List<DeudaDto>>> GetList(Expression<Func<DeudaDto, bool>> criterio)
     {
         await using var contexto = await contextFactory.CreateDbContextAsync();
-        return await Proyectar(contexto.Deudas.AsNoTracking())
+
+        var lista = await contexto.Deudas
+            .AsNoTracking()
+            .Select(deuda => new DeudaDto
+            {
+                IdDeuda = deuda.IdDeuda,
+                IdUsuario = deuda.IdUsuario,
+                IdEntidad = deuda.IdEntidad,
+                IdTransaccionDesembolso = deuda.IdTransaccionDesembolso,
+                Nombre = deuda.Nombre,
+                MontoOriginal = deuda.MontoOriginal,
+                FechaDeuda = deuda.FechaDeuda,
+                FechaVencimiento = deuda.FechaVencimiento,
+                CuotaMensual = deuda.CuotaMensual,
+                Estado = deuda.Estado,
+                Descripcion = deuda.Descripcion
+            })
             .Where(criterio)
             .ToListAsync();
+
+        return lista;
     }
 
     public async Task<Result> Eliminar(int id)
     {
         await using var contexto = await contextFactory.CreateDbContextAsync();
+
         var eliminado = await contexto.Deudas
-            .Where(x => x.IdDeuda == id)
+            .Where(deuda => deuda.IdDeuda == id)
             .ExecuteDeleteAsync() > 0;
+
         return Result.Success(eliminado);
     }
-
-    private static IQueryable<DeudaDto> Proyectar(IQueryable<Deuda> query) =>
-        query.Select(x => new DeudaDto
-        {
-            IdDeuda = x.IdDeuda,
-            IdUsuario = x.IdUsuario,
-            IdEntidad = x.IdEntidad,
-            IdTransaccionDesembolso = x.IdTransaccionDesembolso,
-            Nombre = x.Nombre,
-            MontoOriginal = x.MontoOriginal,
-            FechaDeuda = x.FechaDeuda,
-            FechaVencimiento = x.FechaVencimiento,
-            CuotaMensual = x.CuotaMensual,
-            Estado = x.Estado,
-            Descripcion = x.Descripcion
-        });
 }

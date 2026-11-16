@@ -13,78 +13,82 @@ public class MonedasService(
 {
     public async Task<Result> Guardar(MonedaDto dto)
     {
-        if (!await Existe(dto.IdMoneda))
-            return Result.Success(await Insertar(dto));
-
-        return Result.Success(await Modificar(dto));
-    }
-
-    private async Task<bool> Existe(int id)
-    {
         await using var contexto = await contextFactory.CreateDbContextAsync();
-        return await contexto.Monedas.AnyAsync(x => x.IdMoneda == id);
-    }
 
-    private async Task<bool> Insertar(MonedaDto dto)
-    {
-        await using var contexto = await contextFactory.CreateDbContextAsync();
-        contexto.Monedas.Add(new Moneda
+        var moneda = await contexto.Monedas.FirstOrDefaultAsync(moneda => moneda.IdMoneda == dto.IdMoneda);
+
+        if (moneda is null)
         {
-            Codigo = dto.Codigo,
-            Nombre = dto.Nombre,
-            Simbolo = dto.Simbolo,
-            Activa = dto.Activa
-        });
-        return await contexto.SaveChangesAsync() > 0;
-    }
+            moneda = new Moneda
+            {
+                Codigo = dto.Codigo,
+                Nombre = dto.Nombre,
+                Simbolo = dto.Simbolo,
+                Activa = dto.Activa
+            };
 
-    private async Task<bool> Modificar(MonedaDto dto)
-    {
-        await using var contexto = await contextFactory.CreateDbContextAsync();
-        var entidad = await contexto.Monedas.FindAsync(dto.IdMoneda);
-        if (entidad is null)
-            return false;
+            contexto.Monedas.Add(moneda);
+        }
+        else
+        {
+            moneda.Codigo = dto.Codigo;
+            moneda.Nombre = dto.Nombre;
+            moneda.Simbolo = dto.Simbolo;
+            moneda.Activa = dto.Activa;
+        }
 
-        // IdUsuario no se modifica: un registro no cambia de dueño
-        entidad.Codigo = dto.Codigo;
-        entidad.Nombre = dto.Nombre;
-        entidad.Simbolo = dto.Simbolo;
-        entidad.Activa = dto.Activa;
-
-        return await contexto.SaveChangesAsync() > 0;
+        return Result.Success(await contexto.SaveChangesAsync() > 0);
     }
 
     public async Task<Result<MonedaDto?>> Buscar(int id)
     {
         await using var contexto = await contextFactory.CreateDbContextAsync();
-        return await Proyectar(contexto.Monedas.AsNoTracking())
-            .FirstOrDefaultAsync(x => x.IdMoneda == id);
+
+        var moneda = await contexto.Monedas
+            .AsNoTracking()
+            .FirstOrDefaultAsync(moneda => moneda.IdMoneda == id);
+
+        if (moneda is null)
+            return (MonedaDto?)null;
+
+        return new MonedaDto
+        {
+            IdMoneda = moneda.IdMoneda,
+            Codigo = moneda.Codigo,
+            Nombre = moneda.Nombre,
+            Simbolo = moneda.Simbolo,
+            Activa = moneda.Activa
+        };
     }
 
     public async Task<Result<List<MonedaDto>>> GetList(Expression<Func<MonedaDto, bool>> criterio)
     {
         await using var contexto = await contextFactory.CreateDbContextAsync();
-        return await Proyectar(contexto.Monedas.AsNoTracking())
+
+        var lista = await contexto.Monedas
+            .AsNoTracking()
+            .Select(moneda => new MonedaDto
+            {
+                IdMoneda = moneda.IdMoneda,
+                Codigo = moneda.Codigo,
+                Nombre = moneda.Nombre,
+                Simbolo = moneda.Simbolo,
+                Activa = moneda.Activa
+            })
             .Where(criterio)
             .ToListAsync();
+
+        return lista;
     }
 
     public async Task<Result> Eliminar(int id)
     {
         await using var contexto = await contextFactory.CreateDbContextAsync();
+
         var eliminado = await contexto.Monedas
-            .Where(x => x.IdMoneda == id)
+            .Where(moneda => moneda.IdMoneda == id)
             .ExecuteDeleteAsync() > 0;
+
         return Result.Success(eliminado);
     }
-
-    private static IQueryable<MonedaDto> Proyectar(IQueryable<Moneda> query) =>
-        query.Select(x => new MonedaDto
-        {
-            IdMoneda = x.IdMoneda,
-            Codigo = x.Codigo,
-            Nombre = x.Nombre,
-            Simbolo = x.Simbolo,
-            Activa = x.Activa
-        });
 }
