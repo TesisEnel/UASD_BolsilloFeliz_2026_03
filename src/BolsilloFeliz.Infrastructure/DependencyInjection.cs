@@ -10,8 +10,12 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<BolsilloFelizDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+        var connectionString = configuration.GetConnectionString("BolsilloFeliz")
+            ?? throw new InvalidOperationException(
+                "Falta la cadena de conexión 'BolsilloFeliz' en ConnectionStrings.");
+
+        services.AddDbContextFactory<BolsilloFelizDbContext>(options =>
+            options.UseSqlServer(connectionString));
 
         return services;
     }
