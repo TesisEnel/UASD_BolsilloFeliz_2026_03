@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>d41fd4c6-3e76-40fc-b6c8-fc3af43f94c9</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BolsilloFeliz.Application\BolsilloFeliz.Application.csproj" />
     <ProjectReference Include="..\BolsilloFeliz.Infrastructure\BolsilloFeliz.Infrastructure.csproj" />
   </ItemGroup>
 
