@@ -24,7 +24,7 @@ public partial class BolsilloFelizDbContext : DbContext
 
     public virtual DbSet<Deuda> Deudas { get; set; }
 
-    public virtual DbSet<Entidade> Entidades { get; set; }
+    public virtual DbSet<Entidad> Entidades { get; set; }
 
     public virtual DbSet<MetaAhorro> MetasAhorros { get; set; }
 
@@ -185,7 +185,7 @@ public partial class BolsilloFelizDbContext : DbContext
                 .HasConstraintName("FK_Deuda_Transaccion");
         });
 
-        modelBuilder.Entity<Entidade>(entity =>
+        modelBuilder.Entity<Entidad>(entity =>
         {
             entity.HasKey(e => e.IdEntidad).HasName("PK__Entidade__7D6628684C0025E0");
 
