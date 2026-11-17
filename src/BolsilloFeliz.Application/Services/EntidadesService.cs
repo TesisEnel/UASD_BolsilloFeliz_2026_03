@@ -19,7 +19,7 @@ public class EntidadesService(
 
         if (entidad is null)
         {
-            entidad = new Entidade
+            entidad = new Entidad
             {
                 IdUsuario = dto.IdUsuario,
                 Nombre = dto.Nombre,
