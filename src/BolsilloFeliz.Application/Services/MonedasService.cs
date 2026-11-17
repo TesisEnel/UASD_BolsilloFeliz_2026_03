@@ -1,4 +1,4 @@
-﻿using Aplicada1.Core;
+using Aplicada1.Core;
 using BolsilloFeliz.Application.DTOs;
 using BolsilloFeliz.Domain.Entities;
 using BolsilloFeliz.Infrastructure.Persistence;

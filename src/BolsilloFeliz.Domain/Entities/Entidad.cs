@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BolsilloFeliz.Domain.Entities;
 
-public partial class Entidade
+public partial class Entidad
 {
     public int IdEntidad { get; set; }
 

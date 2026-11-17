@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Elementos de la solución/">
+    <File Path="README.md" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/BlazorClient/BlazorClient.Client/BlazorClient.Client.csproj" Id="c8415453-0798-48bc-95c2-634ede1a2d9f" />
     <Project Path="src/BlazorClient/BlazorClient/BlazorClient.csproj" Id="a131d26a-f59e-4771-8262-51bdaad437f1" />
