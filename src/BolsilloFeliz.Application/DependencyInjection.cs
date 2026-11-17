@@ -11,6 +11,7 @@ public static class DependencyInjection
         services.AddScoped<EntidadesService>();
         services.AddScoped<DeudasService>();
         services.AddScoped<DetallesDeudaService>();
+        services.AddScoped<UsuariosService>();
 
         return services;
     }
