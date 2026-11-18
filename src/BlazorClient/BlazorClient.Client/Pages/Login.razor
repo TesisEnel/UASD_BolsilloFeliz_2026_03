@@ -1,0 +1,112 @@
+﻿@page "/login"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@inject HttpClient Http
+
+<PageTitle>Crear usuario</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h1 class="mb-4">Crear usuario</h1>
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-danger" role="alert">@error</div>
+        }
+
+        @if (creado is not null)
+        {
+            <div class="alert alert-success" role="alert">
+                Usuario creado: <strong>@creado.Nombres @creado.Apellidos</strong>
+                (@creado.Email), Id @creado.IdUsuario.
+            </div>
+        }
+
+        <EditForm Model="usuario" OnValidSubmit="Crear">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">Nombres</label>
+                <InputText class="form-control" @bind-Value="usuario.Nombres" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Apellidos</label>
+                <InputText class="form-control" @bind-Value="usuario.Apellidos" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <InputText type="email" class="form-control" @bind-Value="usuario.Email" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Contraseña (mínimo 8 caracteres)</label>
+                <InputText type="password" class="form-control" @bind-Value="usuario.Password" />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" disabled="@cargando">
+                @(cargando ? "Creando..." : "Crear usuario")
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private UsuarioDto usuario = new();
+    private UsuarioDto? creado;
+    private string? error;
+    private bool cargando;
+
+    private async Task Crear()
+    {
+        error = null;
+        creado = null;
+
+        if ((usuario.Password?.Length ?? 0) < 8)
+        {
+            error = "La contraseña debe tener al menos 8 caracteres.";
+            return;
+        }
+
+        cargando = true;
+        try
+        {
+            var respuesta = await Http.PostAsJsonAsync("api/usuarios", usuario);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                creado = await respuesta.Content.ReadFromJsonAsync<UsuarioDto>();
+                usuario = new();
+            }
+            else
+            {
+                error = await LeerError(respuesta);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con la API.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private static async Task<string> LeerError(HttpResponseMessage respuesta)
+    {
+        try
+        {
+            var e = await respuesta.Content.ReadFromJsonAsync<ErrorApiDto>();
+            if (!string.IsNullOrWhiteSpace(e?.Mensaje))
+                return e.Mensaje;
+        }
+        catch
+        {
+            // la respuesta no tenía el formato esperado
+        }
+
+        return $"Error {(int)respuesta.StatusCode}: {respuesta.ReasonPhrase}";
+    }
+}
