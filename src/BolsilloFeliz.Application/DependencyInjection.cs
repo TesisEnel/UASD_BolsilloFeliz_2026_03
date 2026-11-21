@@ -12,6 +12,12 @@ public static class DependencyInjection
         services.AddScoped<DeudasService>();
         services.AddScoped<DetallesDeudaService>();
         services.AddScoped<UsuariosService>();
+        services.AddScoped<RolesService>();
+        services.AddScoped<CategoriasService>();
+        services.AddScoped<CuentasService>();
+        services.AddScoped<PresupuestosService>();
+        services.AddScoped<TransaccionesService>();
+        services.AddScoped<TransferenciasService>();
 
         return services;
     }
