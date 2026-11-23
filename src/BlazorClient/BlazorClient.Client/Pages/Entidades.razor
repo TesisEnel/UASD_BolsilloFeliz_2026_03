@@ -19,7 +19,7 @@
 
 <div class="card mb-4">
     <div class="card-body">
-        <h5 class="card-title">@(entidad.IdEntidad == 0 ? "Nueva entidad" : $"Editando entidad {entidad.IdEntidad}")</h5>
+        <h5 class="card-title">@(entidad.IdEntidad == 0 ? "Nueva entidad" : $"Editando entidad")</h5>
 
         <EditForm Model="entidad" OnValidSubmit="Guardar">
             <DataAnnotationsValidator />
@@ -83,7 +83,7 @@ else
     <table class="table table-striped align-middle">
         <thead>
             <tr>
-                <th>Id</th>
+               
                 <th>Nombre</th>
                 <th>Tipo</th>
                 <th>Identificación</th>
@@ -96,7 +96,7 @@ else
             @foreach (var e in entidades)
             {
                 <tr>
-                    <td>@e.IdEntidad</td>
+                    
                     <td>@e.Nombre</td>
                     <td>@e.TipoEntidad</td>
                     <td>@e.Identificacion</td>
