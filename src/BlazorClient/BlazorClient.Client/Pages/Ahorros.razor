@@ -1,0 +1,508 @@
+@page "/ahorros"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>Ahorros</PageTitle>
+
+<h1 class="mb-3">Ahorros</h1>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert alert-success" role="alert">@mensaje</div>
+}
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger" role="alert">@error</div>
+}
+
+@if (monedas.Count == 0)
+{
+    <div class="alert alert-warning" role="alert">
+        No hay monedas registradas. Cree una primero en <a href="monedas">Monedas</a>.
+    </div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">@(meta.IdMetaAhorro == 0 ? "Nueva meta de ahorro" : $"Editando meta")</h5>
+
+        <EditForm Model="meta" OnValidSubmit="GuardarMeta">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label">Nombre</label>
+                    <InputText class="form-control" @bind-Value="meta.Nombre" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Moneda</label>
+                    <InputSelect class="form-select" @bind-Value="meta.IdMoneda">
+                        <option value="0">-- Seleccione --</option>
+                        @foreach (var m in monedas)
+                        {
+                            <option value="@m.IdMoneda">@m.Codigo - @m.Nombre</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Monto objetivo</label>
+                    <InputNumber class="form-control" @bind-Value="meta.MontoObjetivo" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha de inicio</label>
+                    <InputDate class="form-control" @bind-Value="meta.FechaInicio" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha objetivo (opcional)</label>
+                    <InputDate class="form-control" @bind-Value="meta.FechaObjetivo" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Descripción</label>
+                    <InputText class="form-control" @bind-Value="meta.Descripcion" />
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <div class="form-check">
+                        <InputCheckbox class="form-check-input" id="metaActiva" @bind-Value="meta.Estado" />
+                        <label class="form-check-label" for="metaActiva">Activa</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary" disabled="@cargando">
+                    @(meta.IdMetaAhorro == 0 ? "Crear" : "Actualizar")
+                </button>
+                @if (meta.IdMetaAhorro != 0)
+                {
+                    <button type="button" class="btn btn-secondary ms-2" @onclick="CancelarMeta">Cancelar</button>
+                }
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@if (cargandoLista)
+{
+    <p><em>Cargando...</em></p>
+}
+else if (metas.Count == 0)
+{
+    <p>No hay metas de ahorro para este usuario.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    
+                    <th>Nombre</th>
+                    <th>Moneda</th>
+                    <th class="text-end">Objetivo</th>
+                    <th class="text-end">Ahorrado</th>
+                    <th style="min-width:140px">Progreso</th>
+                    <th>Fecha objetivo</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var x in metas)
+                {
+                    <tr class="@(seleccionada?.IdMetaAhorro == x.IdMetaAhorro ? "table-active" : "")">
+                        <td>@x.Nombre</td>
+                        <td>@CodigoMoneda(x.IdMoneda)</td>
+                        <td class="text-end">@x.MontoObjetivo.ToString("N2")</td>
+                        <td class="text-end">@Ahorrado(x).ToString("N2")</td>
+                        <td>
+                            <div class="progress" role="progressbar">
+                                <div class="progress-bar" style="width: @(Porcentaje(x))%">@(Porcentaje(x))%</div>
+                            </div>
+                        </td>
+                        <td>@(x.FechaObjetivo?.ToString("dd/MM/yyyy"))</td>
+                        <td>@(x.Estado ? "Activa" : "Inactiva")</td>
+                        <td class="text-end text-nowrap">
+                            <button class="btn btn-sm btn-outline-success" @onclick="() => Seleccionar(x)">Aportes</button>
+                            <button class="btn btn-sm btn-outline-primary ms-1" @onclick="() => EditarMeta(x)">Editar</button>
+                            <button class="btn btn-sm btn-outline-danger ms-1" @onclick="() => EliminarMeta(x)">Eliminar</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (seleccionada is not null)
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Aportes de la meta: @seleccionada.Nombre</h5>
+            <p class="text-muted">
+                Objetivo @seleccionada.MontoObjetivo.ToString("N2") ·
+                Ahorrado @Ahorrado(seleccionada).ToString("N2") ·
+                Falta @((seleccionada.MontoObjetivo - Ahorrado(seleccionada)).ToString("N2"))
+            </p>
+
+            <EditForm Model="aporte" OnValidSubmit="GuardarAporte">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Monto</label>
+                        <InputNumber class="form-control" @bind-Value="aporte.Monto" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Fecha</label>
+                        <InputDate class="form-control" @bind-Value="aporte.Fecha" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Nota</label>
+                        <InputText class="form-control" @bind-Value="aporte.Nota" />
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-success" disabled="@cargando">
+                        @(aporte.IdAporteAhorro == 0 ? "Registrar aporte" : "Actualizar")
+                    </button>
+                    @if (aporte.IdAporteAhorro != 0)
+                    {
+                        <button type="button" class="btn btn-secondary ms-2" @onclick="CancelarAporte">Cancelar</button>
+                    }
+                    <button type="button" class="btn btn-link ms-2" @onclick="CerrarAportes">Cerrar</button>
+                </div>
+            </EditForm>
+
+            @if (AportesDe(seleccionada).Count == 0)
+            {
+                <p class="mt-3">Todavía no hay aportes registrados.</p>
+            }
+            else
+            {
+                <table class="table table-sm align-middle mt-3">
+                    <thead>
+                        <tr>
+                           
+                            <th>Fecha</th>
+                            <th class="text-end">Monto</th>
+                            <th>Nota</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in AportesDe(seleccionada))
+                        {
+                            <tr>
+                                
+                                <td>@a.Fecha.ToString("dd/MM/yyyy")</td>
+                                <td class="text-end">@a.Monto.ToString("N2")</td>
+                                <td>@a.Nota</td>
+                                <td class="text-end text-nowrap">
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => EditarAporte(a)">Editar</button>
+                                    <button class="btn btn-sm btn-outline-danger ms-1" @onclick="() => EliminarAporte(a)">Eliminar</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private List<MetaAhorroDto> metas = new();
+    private List<AporteAhorroDto> aportes = new();
+    private List<MonedaDto> monedas = new();
+
+    private MetaAhorroDto meta = new();
+    private MetaAhorroDto? seleccionada;
+    private AporteAhorroDto aporte = new();
+
+    private string? mensaje;
+    private string? error;
+    private bool cargando;
+    private bool cargandoLista = true;
+
+    private int idUsuario;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarTodo();
+    }
+
+    private async Task CargarTodo()
+    {
+        cargandoLista = true;
+        try
+        {
+            var usuarios = await Http.GetFromJsonAsync<List<UsuarioDto>>("api/usuarios") ?? new();
+            idUsuario = usuarios.Where(x => x.Estado).OrderBy(x => x.IdUsuario)
+                                .Select(x => x.IdUsuario).FirstOrDefault();
+
+            if (idUsuario == 0)
+            {
+                error = "No hay usuarios registrados. Cree uno primero en Registrar usuario.";
+                return;
+            }
+
+            monedas = await Http.GetFromJsonAsync<List<MonedaDto>>("api/monedas") ?? new();
+            metas = await Http.GetFromJsonAsync<List<MetaAhorroDto>>($"api/metasahorros?idUsuario={idUsuario}") ?? new();
+            aportes = await Http.GetFromJsonAsync<List<AporteAhorroDto>>($"api/aportesahorros?idUsuario={idUsuario}") ?? new();
+
+            if (seleccionada is not null)
+                seleccionada = metas.FirstOrDefault(x => x.IdMetaAhorro == seleccionada.IdMetaAhorro);
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con la API.";
+        }
+        finally
+        {
+            cargandoLista = false;
+        }
+    }
+
+    private string CodigoMoneda(int id) =>
+        monedas.FirstOrDefault(m => m.IdMoneda == id)?.Codigo ?? $"#{id}";
+
+    private decimal Ahorrado(MetaAhorroDto x) =>
+        aportes.Where(a => a.IdMetaAhorro == x.IdMetaAhorro).Sum(a => a.Monto);
+
+    private int Porcentaje(MetaAhorroDto x) =>
+        x.MontoObjetivo <= 0 ? 0 : (int)Math.Min(100m, Math.Round(Ahorrado(x) / x.MontoObjetivo * 100m));
+
+    private List<AporteAhorroDto> AportesDe(MetaAhorroDto x) =>
+        aportes.Where(a => a.IdMetaAhorro == x.IdMetaAhorro).OrderByDescending(a => a.Fecha).ToList();
+
+    private void LimpiarMensajes()
+    {
+        mensaje = null;
+        error = null;
+    }
+
+    // ---------- Metas ----------
+    private async Task GuardarMeta()
+    {
+        LimpiarMensajes();
+
+        if (meta.IdMoneda == 0)
+        {
+            error = "Seleccione una moneda.";
+            return;
+        }
+        if (meta.MontoObjetivo <= 0)
+        {
+            error = "El monto objetivo debe ser mayor que cero.";
+            return;
+        }
+        if (meta.FechaObjetivo.HasValue && meta.FechaObjetivo.Value < meta.FechaInicio)
+        {
+            error = "La fecha objetivo no puede ser anterior a la fecha de inicio.";
+            return;
+        }
+
+        meta.IdUsuario = idUsuario;
+        cargando = true;
+
+        try
+        {
+            var esNueva = meta.IdMetaAhorro == 0;
+
+            var respuesta = esNueva
+                ? await Http.PostAsJsonAsync("api/metasahorros", meta)
+                : await Http.PutAsJsonAsync($"api/metasahorros/{meta.IdMetaAhorro}", meta);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = esNueva ? "Meta creada correctamente." : "Meta actualizada correctamente.";
+                meta = new();
+                await CargarTodo();
+            }
+            else
+            {
+                error = await ApiErrores.LeerAsync(respuesta);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con la API.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void EditarMeta(MetaAhorroDto x)
+    {
+        LimpiarMensajes();
+        meta = new MetaAhorroDto
+        {
+            IdMetaAhorro = x.IdMetaAhorro,
+            IdUsuario = x.IdUsuario,
+            IdMoneda = x.IdMoneda,
+            Nombre = x.Nombre,
+            MontoObjetivo = x.MontoObjetivo,
+            FechaInicio = x.FechaInicio,
+            FechaObjetivo = x.FechaObjetivo,
+            Descripcion = x.Descripcion,
+            Estado = x.Estado
+        };
+    }
+
+    private void CancelarMeta()
+    {
+        LimpiarMensajes();
+        meta = new();
+    }
+
+    private async Task EliminarMeta(MetaAhorroDto x)
+    {
+        LimpiarMensajes();
+
+        var cantidad = aportes.Count(a => a.IdMetaAhorro == x.IdMetaAhorro);
+        var aviso = cantidad > 0
+            ? $"¿Eliminar la meta {x.Nombre}? También se eliminarán sus {cantidad} aporte(s)."
+            : $"¿Eliminar la meta {x.Nombre}?";
+
+        var confirmado = await JS.InvokeAsync<bool>("confirm", aviso);
+        if (!confirmado)
+            return;
+
+        try
+        {
+            var respuesta = await Http.DeleteAsync($"api/metasahorros/{x.IdMetaAhorro}");
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Meta eliminada correctamente.";
+                if (seleccionada?.IdMetaAhorro == x.IdMetaAhorro)
+                    seleccionada = null;
+                await CargarTodo();
+            }
+            else
+            {
+                error = await ApiErrores.LeerAsync(respuesta);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con la API.";
+        }
+    }
+
+    // ---------- Aportes ----------
+    private void Seleccionar(MetaAhorroDto x)
+    {
+        LimpiarMensajes();
+        seleccionada = x;
+        aporte = new();
+    }
+
+    private void CerrarAportes()
+    {
+        seleccionada = null;
+        aporte = new();
+    }
+
+    private async Task GuardarAporte()
+    {
+        LimpiarMensajes();
+
+        if (seleccionada is null)
+            return;
+
+        if (aporte.Monto <= 0)
+        {
+            error = "El monto debe ser mayor que cero.";
+            return;
+        }
+
+        aporte.IdUsuario = idUsuario;
+        aporte.IdMetaAhorro = seleccionada.IdMetaAhorro;
+        cargando = true;
+
+        try
+        {
+            var esNuevo = aporte.IdAporteAhorro == 0;
+
+            var respuesta = esNuevo
+                ? await Http.PostAsJsonAsync("api/aportesahorros", aporte)
+                : await Http.PutAsJsonAsync($"api/aportesahorros/{aporte.IdAporteAhorro}", aporte);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = esNuevo ? "Aporte registrado correctamente." : "Aporte actualizado correctamente.";
+                aporte = new();
+                await CargarTodo();
+            }
+            else
+            {
+                error = await ApiErrores.LeerAsync(respuesta);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con la API.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void EditarAporte(AporteAhorroDto a)
+    {
+        LimpiarMensajes();
+        aporte = new AporteAhorroDto
+        {
+            IdAporteAhorro = a.IdAporteAhorro,
+            IdUsuario = a.IdUsuario,
+            IdMetaAhorro = a.IdMetaAhorro,
+            IdCuenta = a.IdCuenta,
+            Monto = a.Monto,
+            Fecha = a.Fecha,
+            Nota = a.Nota
+        };
+    }
+
+    private void CancelarAporte()
+    {
+        LimpiarMensajes();
+        aporte = new();
+    }
+
+    private async Task EliminarAporte(AporteAhorroDto a)
+    {
+        LimpiarMensajes();
+
+        var confirmado = await JS.InvokeAsync<bool>("confirm", $"¿Eliminar el aporte de {a.Monto:N2}?");
+        if (!confirmado)
+            return;
+
+        try
+        {
+            var respuesta = await Http.DeleteAsync($"api/aportesahorros/{a.IdAporteAhorro}");
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Aporte eliminado correctamente.";
+                await CargarTodo();
+            }
+            else
+            {
+                error = await ApiErrores.LeerAsync(respuesta);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            error = "No se pudo conectar con la API.";
+        }
+    }
+}

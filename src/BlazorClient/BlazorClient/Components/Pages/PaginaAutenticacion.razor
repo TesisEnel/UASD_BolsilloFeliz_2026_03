@@ -1,0 +1,92 @@
+﻿
+@page "/pagina_autenticacion"
+@attribute [AllowAnonymous]
+
+<PageTitle>Iniciar sesión - BolsilloFeliz</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5 col-lg-4">
+
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+
+                    <h2 class="text-center mb-2">BolsilloFeliz</h2>
+                    <p class="text-center text-muted mb-4">
+                        Inicia sesión en tu cuenta
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(Error))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @MensajeError
+                        </div>
+                    }
+
+                    <form method="post" action="/login">
+
+                        <AntiforgeryToken />
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">
+                                Correo electrónico
+                            </label>
+
+                            <input id="email"
+                                   type="email"
+                                   name="email"
+                                   class="form-control"
+                                   placeholder="correo@ejemplo.com"
+                                   autocomplete="username"
+                                   required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                Contraseña
+                            </label>
+
+                            <input id="password"
+                                   type="password"
+                                   name="password"
+                                   class="form-control"
+                                   placeholder="Ingresa tu contraseña"
+                                   autocomplete="current-password"
+                                   required />
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-success w-100">
+                            Iniciar sesión
+                        </button>
+
+                    </form>
+
+                    <hr />
+
+                    <p class="text-center mb-0">
+                        ¿No tienes una cuenta?
+                        <a href="/registrar-usuario">
+                            Regístrate aquí
+                        </a>
+                    </p>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? Error { get; set; }
+
+    private string MensajeError => Error switch
+    {
+        "credenciales" => "El correo electrónico o la contraseña son incorrectos.",
+        "api" => "No fue posible conectar con el servidor. Inténtalo nuevamente.",
+        "respuesta" => "No se pudo procesar la respuesta del servidor.",
+        _ => ""
+    };
+}
