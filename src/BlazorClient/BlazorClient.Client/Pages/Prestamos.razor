@@ -101,6 +101,25 @@ else if (items.Count == 0)
 }
 else
 {
+        <div class="row g-2 mb-3">
+        <div class="col-auto">
+            <label class="form-label mb-0 small">Ordenar por</label>
+            <select class="form-select" @bind="orden">
+                <option value="vencimiento">Vence primero (fecha más cercana)</option>
+                <option value="reciente">Más recientes primero</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <label class="form-label mb-0 small">Estado</label>
+            <select class="form-select" @bind="filtroEstado">
+                <option value="">Todos</option>
+                @foreach (var s in estados)
+                {
+                    <option value="@s">@s</option>
+                }
+            </select>
+        </div>
+    </div>
     <div class="table-responsive">
         <table class="table table-striped table-hover align-middle">
             <thead>
@@ -116,7 +135,7 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var x in items)
+               @foreach (var x in ItemsFiltrados)
                 {
                     <tr class="@(seleccionado?.IdPrestamo == x.IdPrestamo ? "table-active" : "")">
                         <td>@x.Nombre</td>
@@ -222,6 +241,24 @@ else
     private static readonly string[] estados = { "Activo", "Vencido", "Pagado", "Cancelado" };
 
     private List<PrestamoDto> items = new();
+        private string orden = "vencimiento";
+    private string filtroEstado = "";
+
+    private IEnumerable<PrestamoDto> ItemsFiltrados
+    {
+        get
+        {
+            var q = items.AsEnumerable();
+
+            if (!string.IsNullOrEmpty(filtroEstado))
+                q = q.Where(x => x.Estado == filtroEstado);
+
+            return orden == "reciente"
+                ? q.OrderByDescending(x => x.FechaPrestamo)
+                : q.OrderBy(x => x.FechaVencimiento == null)
+                   .ThenBy(x => x.FechaVencimiento);
+        }
+    }
     private static string ClaseEstado(string estado) => estado switch
     {
         "Activo" => "bg-primary",
