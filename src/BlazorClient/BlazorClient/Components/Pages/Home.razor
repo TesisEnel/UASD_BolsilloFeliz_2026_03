@@ -4,6 +4,24 @@
 
 <h1>BolsilloFeliz</h1>
 
-
+<div class="row g-3 my-3">
+    @foreach (var m in new[] {
+        new { Titulo = "Monedas", Ruta = "monedas", Texto = "Catálogo de monedas" },
+        new { Titulo = "Entidades", Ruta = "entidades", Texto = "Bancos y personas con las que tratas" },
+        new { Titulo = "Préstamos", Ruta = "prestamos", Texto = "Dinero que prestaste" },
+        new { Titulo = "Deudas", Ruta = "deudas", Texto = "Dinero que debes" },
+        new { Titulo = "Ahorros", Ruta = "ahorros", Texto = "Tus metas de ahorro" } })
+    {
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">@m.Titulo</h5>
+                    <p class="card-text text-muted">@m.Texto</p>
+                    <a href="@m.Ruta" class="btn btn-primary mt-auto">Abrir</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
 
