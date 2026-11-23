@@ -3,6 +3,7 @@ using BolsilloFeliz.Application.DTOs;
 using BolsilloFeliz.Domain.Entities;
 using BolsilloFeliz.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 
 namespace BolsilloFeliz.Application.Services;
@@ -169,5 +170,32 @@ public class UsuariosService(
         await contexto.SaveChangesAsync();
 
         return Result.Success();
+    }
+
+   
+
+    public async Task<Result<UsuarioDto?>> IniciarSesion(LoginDto dto)
+    {
+        var email = NormalizarEmail(dto.Email);
+
+        await using var contexto = await contextFactory.CreateDbContextAsync();
+
+        var usuario = await contexto.Usuarios
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Email == email && u.Estado);
+
+        if (usuario is null || !BCrypt.Net.BCrypt.Verify(dto.Password, usuario.PasswordHash))
+            return (UsuarioDto?)null;
+
+        return new UsuarioDto
+        {
+            IdUsuario = usuario.IdUsuario,
+            IdRol = usuario.IdRol,
+            Nombres = usuario.Nombres,
+            Apellidos = usuario.Apellidos,
+            Email = usuario.Email,
+            FechaRegistro = usuario.FechaRegistro,
+            Estado = usuario.Estado
+        };
     }
 }

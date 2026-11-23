@@ -1,6 +1,8 @@
 ﻿@page "/pagina_autenticacion"
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 @inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Nav
 
 <PageTitle>Iniciar sesión</PageTitle>
 
@@ -13,71 +15,84 @@
             <div class="alert alert-danger" role="alert">@error</div>
         }
 
-        @if (creado is not null)
+        @if (sesionActiva is not null)
         {
-            <div class="alert alert-success" role="alert">
-                Usuario creado: <strong>@creado.Nombres @creado.Apellidos</strong>
-                (@creado.Email), Id @creado.IdUsuario.
+            <div class="alert alert-info d-flex justify-content-between align-items-center" role="alert">
+                <span>Sesión iniciada como <strong>@sesionActiva</strong>.</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="CerrarSesion">Cerrar sesión</button>
             </div>
         }
 
-        <EditForm Model="usuario" OnValidSubmit="Crear">
+        <EditForm Model="credenciales" OnValidSubmit="Ingresar">
             <DataAnnotationsValidator />
             <ValidationSummary />
 
             <div class="mb-3">
-                <label class="form-label">Nombres</label>
-                <InputText class="form-control" @bind-Value="usuario.Nombres" />
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Apellidos</label>
-                <InputText class="form-control" @bind-Value="usuario.Apellidos" />
-            </div>
-
-            <div class="mb-3">
                 <label class="form-label">Email</label>
-                <InputText type="email" class="form-control" @bind-Value="usuario.Email" />
+                <InputText type="email" class="form-control" @bind-Value="credenciales.Email" />
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Contraseña (mínimo 8 caracteres)</label>
-                <InputText type="password" class="form-control" @bind-Value="usuario.Password" />
+                <label class="form-label">Contraseña</label>
+                <InputText type="password" class="form-control" @bind-Value="credenciales.Password" />
             </div>
 
             <button type="submit" class="btn btn-primary w-100" disabled="@cargando">
-                @(cargando ? "Creando..." : "Crear usuario")
+                @(cargando ? "Ingresando..." : "Iniciar sesión")
             </button>
         </EditForm>
+
+        <p class="text-center mt-3">
+            ¿No tiene cuenta? <a href="registrar-usuario">Crear usuario</a>
+        </p>
     </div>
 </div>
 
 @code {
-    private UsuarioDto usuario = new();
-    private UsuarioDto? creado;
+    // Solo Email y Password: es lo único que se envía a la API.
+    private class Credenciales
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "El email es obligatorio.")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "El email no es válido.")]
+        public string Email { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "La contraseña es obligatoria.")]
+        public string Password { get; set; } = "";
+    }
+
+    private Credenciales credenciales = new();
+    private string? sesionActiva;
     private string? error;
     private bool cargando;
 
-    private async Task Crear()
+    protected override async Task OnInitializedAsync()
+    {
+        sesionActiva = await JS.InvokeAsync<string?>("localStorage.getItem", "nombreUsuario");
+    }
+
+    private async Task Ingresar()
     {
         error = null;
-        creado = null;
-
-        if ((usuario.Password?.Length ?? 0) < 8)
-        {
-            error = "La contraseña debe tener al menos 8 caracteres.";
-            return;
-        }
-
         cargando = true;
+
         try
         {
-            var respuesta = await Http.PostAsJsonAsync("api/usuarios", usuario);
+            var respuesta = await Http.PostAsJsonAsync("api/usuarios/login", credenciales);
 
             if (respuesta.IsSuccessStatusCode)
             {
-                creado = await respuesta.Content.ReadFromJsonAsync<UsuarioDto>();
-                usuario = new();
+                var usuario = await respuesta.Content.ReadFromJsonAsync<UsuarioDto>();
+
+                if (usuario is null)
+                {
+                    error = "Respuesta inválida de la API.";
+                    return;
+                }
+
+                await JS.InvokeVoidAsync("localStorage.setItem", "idUsuario", usuario.IdUsuario.ToString());
+                await JS.InvokeVoidAsync("localStorage.setItem", "nombreUsuario", $"{usuario.Nombres} {usuario.Apellidos}");
+
+                Nav.NavigateTo("ahorros");
             }
             else
             {
@@ -92,6 +107,13 @@
         {
             cargando = false;
         }
+    }
+
+    private async Task CerrarSesion()
+    {
+        await JS.InvokeVoidAsync("localStorage.removeItem", "idUsuario");
+        await JS.InvokeVoidAsync("localStorage.removeItem", "nombreUsuario");
+        sesionActiva = null;
     }
 
     private static async Task<string> LeerError(HttpResponseMessage respuesta)
