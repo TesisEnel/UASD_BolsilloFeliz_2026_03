@@ -135,21 +135,11 @@ public class UsuariosService(
     {
         await using var contexto = await contextFactory.CreateDbContextAsync();
 
-        try
-        {
-            var eliminado = await contexto.Usuarios
-                .Where(u => u.IdUsuario == idUsuario)
-                .ExecuteDeleteAsync() > 0;
+        var filas = await contexto.Usuarios
+            .Where(u => u.IdUsuario == idUsuario)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.Estado, false));
 
-            return Result.Success(eliminado);
-        }
-        catch (Exception ex) when (ex is DbUpdateException
-                                   || ex is Microsoft.Data.SqlClient.SqlException { Number: 547 })
-        {
-            // 547 = violación de llave foránea
-            return Result.Failure(new Error("TIENE_DATOS_RELACIONADOS",
-                "No se puede eliminar: el usuario tiene cuentas, transacciones u otros datos asociados."));
-        }
+        return Result.Success(filas > 0);
     }
 
     // Método adicional (igual que GetPrestamosPendientes en el ejemplo)
