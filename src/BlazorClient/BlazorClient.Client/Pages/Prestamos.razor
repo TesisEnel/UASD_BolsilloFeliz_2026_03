@@ -1,10 +1,6 @@
 @page "/prestamos"
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 @inject HttpClient Http
-<<<<<<< HEAD
-=======
-@inject SesionUsuario Sesion
->>>>>>> feature/jason
 @inject IJSRuntime JS
 
 <PageTitle>Préstamos</PageTitle>
@@ -21,11 +17,6 @@
     <div class="alert alert-danger" role="alert">@error</div>
 }
 
-<<<<<<< HEAD
-=======
-<BarraUsuario AlCambiar="CargarTodo" />
-
->>>>>>> feature/jason
 @if (entidades.Count == 0)
 {
     <div class="alert alert-warning" role="alert">
@@ -253,11 +244,8 @@ else
 
     private static DetallesPrestamoDto NuevoPago() => new();
 
-<<<<<<< HEAD
     private int idUsuario;
 
-=======
->>>>>>> feature/jason
     protected override async Task OnInitializedAsync()
     {
         await CargarTodo();
@@ -268,7 +256,6 @@ else
         cargandoLista = true;
         try
         {
-<<<<<<< HEAD
             var usuarios = await Http.GetFromJsonAsync<List<UsuarioDto>>("api/usuarios") ?? new();
             idUsuario = usuarios.Where(x => x.Estado).OrderBy(x => x.IdUsuario)
                                 .Select(x => x.IdUsuario).FirstOrDefault();
@@ -282,12 +269,6 @@ else
             entidades = await Http.GetFromJsonAsync<List<EntidadDto>>($"api/entidades?idUsuario={idUsuario}") ?? new();
             items = await Http.GetFromJsonAsync<List<PrestamoDto>>($"api/prestamos?idUsuario={idUsuario}") ?? new();
             pagos = await Http.GetFromJsonAsync<List<DetallesPrestamoDto>>($"api/detallesprestamo?idUsuario={idUsuario}") ?? new();
-=======
-            var u = Sesion.IdUsuario;
-            entidades = await Http.GetFromJsonAsync<List<EntidadDto>>($"api/entidades?idUsuario={u}") ?? new();
-            items = await Http.GetFromJsonAsync<List<PrestamoDto>>($"api/prestamos?idUsuario={u}") ?? new();
-            pagos = await Http.GetFromJsonAsync<List<DetallesPrestamoDto>>($"api/detallesprestamo?idUsuario={u}") ?? new();
->>>>>>> feature/jason
 
             if (seleccionado is not null)
                 seleccionado = items.FirstOrDefault(x => x.IdPrestamo == seleccionado.IdPrestamo);
@@ -343,11 +324,7 @@ else
             return;
         }
 
-<<<<<<< HEAD
         item.IdUsuario = idUsuario;
-=======
-        item.IdUsuario = Sesion.IdUsuario;
->>>>>>> feature/jason
         cargando = true;
 
         try
@@ -483,11 +460,7 @@ else
 
         try
         {
-<<<<<<< HEAD
             pago.IdUsuario = idUsuario;
-=======
-            pago.IdUsuario = Sesion.IdUsuario;
->>>>>>> feature/jason
             pago.IdPrestamo = seleccionado.IdPrestamo;
 
             if (esNuevo)
@@ -534,11 +507,7 @@ else
 
         var transaccion = new TransaccionDto
         {
-<<<<<<< HEAD
             IdUsuario = idUsuario,
-=======
-            IdUsuario = Sesion.IdUsuario,
->>>>>>> feature/jason
             Nombre = nombre,
             Monto = pago.MontoPagado,
             Tipo = "Abono de prestamo",
@@ -555,11 +524,7 @@ else
 
         var usadas = pagos.Select(p => p.IdTransaccion).ToHashSet();
         var transacciones = await Http.GetFromJsonAsync<List<TransaccionDto>>(
-<<<<<<< HEAD
             $"api/transacciones?idUsuario={idUsuario}") ?? new();
-=======
-            $"api/transacciones?idUsuario={Sesion.IdUsuario}") ?? new();
->>>>>>> feature/jason
 
         var libre = transacciones
             .Where(t => t.Tipo == "Abono de prestamo" && !usadas.Contains(t.IdTransaccion))
@@ -624,8 +589,4 @@ else
             error = "No se pudo conectar con la API.";
         }
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> feature/jason
