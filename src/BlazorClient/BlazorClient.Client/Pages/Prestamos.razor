@@ -135,7 +135,7 @@ else
                 </tr>
             </thead>
             <tbody>
-               @foreach (var x in ItemsFiltrados)
+                @foreach (var x in ItemsFiltrados)
                 {
                     <tr class="@(seleccionado?.IdPrestamo == x.IdPrestamo ? "table-active" : "")">
                         <td>@x.Nombre</td>
