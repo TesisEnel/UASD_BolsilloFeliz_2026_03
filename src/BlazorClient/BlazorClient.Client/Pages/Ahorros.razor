@@ -1,6 +1,10 @@
 @page "/ahorros"
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 @inject HttpClient Http
+<<<<<<< HEAD
+=======
+@inject SesionUsuario Sesion
+>>>>>>> feature/jason
 @inject IJSRuntime JS
 
 <PageTitle>Ahorros</PageTitle>
@@ -17,6 +21,7 @@
     <div class="alert alert-danger" role="alert">@error</div>
 }
 
+<<<<<<< HEAD
 @if (monedas.Count == 0)
 {
     <div class="alert alert-warning" role="alert">
@@ -530,6 +535,9 @@ else
 }
 
 
+=======
+<BarraUsuario AlCambiar="CargarTodo" />
+>>>>>>> feature/jason
 
 @if (monedas.Count == 0)
 {
@@ -754,7 +762,11 @@ else
         cargandoLista = true;
         try
         {
+<<<<<<< HEAD
             
+=======
+            var u = Sesion.IdUsuario;
+>>>>>>> feature/jason
             monedas = await Http.GetFromJsonAsync<List<MonedaDto>>("api/monedas") ?? new();
             metas = await Http.GetFromJsonAsync<List<MetaAhorroDto>>($"api/metasahorros?idUsuario={u}") ?? new();
             aportes = await Http.GetFromJsonAsync<List<AporteAhorroDto>>($"api/aportesahorros?idUsuario={u}") ?? new();
@@ -1009,4 +1021,8 @@ else
             error = "No se pudo conectar con la API.";
         }
     }
+<<<<<<< HEAD
 } *@
+=======
+}
+>>>>>>> feature/jason
