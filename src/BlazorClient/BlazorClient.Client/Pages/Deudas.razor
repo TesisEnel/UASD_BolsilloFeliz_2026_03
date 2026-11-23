@@ -26,7 +26,7 @@
 
 <div class="card mb-4">
     <div class="card-body">
-        <h5 class="card-title">@(item.IdDeuda == 0 ? "Nueva deuda" : $"Editando deuda {item.IdDeuda}")</h5>
+        <h5 class="card-title">@(item.IdDeuda == 0 ? "Nueva deuda" : $"Editando deuda")</h5>
 
         <EditForm Model="item" OnValidSubmit="GuardarItem">
             <DataAnnotationsValidator />
@@ -105,7 +105,6 @@ else
         <table class="table table-striped align-middle">
             <thead>
                 <tr>
-                    <th>Id</th>
                     <th>Nombre</th>
                     <th>Entidad</th>
                     <th class="text-end">Monto original</th>
@@ -120,7 +119,6 @@ else
                 @foreach (var x in items)
                 {
                     <tr class="@(seleccionado?.IdDeuda == x.IdDeuda ? "table-active" : "")">
-                        <td>@x.IdDeuda</td>
                         <td>@x.Nombre</td>
                         <td>@NombreEntidad(x.IdEntidad)</td>
                         <td class="text-end">@x.MontoOriginal.ToString("N2")</td>
@@ -194,10 +192,8 @@ else
                 <table class="table table-sm align-middle mt-3">
                     <thead>
                         <tr>
-                            <th>Id</th>
                             <th>Fecha</th>
                             <th class="text-end">Monto</th>
-                            <th>Transacción</th>
                             <th>Descripción</th>
                             <th></th>
                         </tr>
@@ -206,10 +202,8 @@ else
                         @foreach (var p in PagosDe(seleccionado))
                         {
                             <tr>
-                                <td>@p.IdDetalleDeuda</td>
                                 <td>@p.FechaPago.ToString("dd/MM/yyyy")</td>
                                 <td class="text-end">@p.MontoPagado.ToString("N2")</td>
-                                <td>@p.IdTransaccion</td>
                                 <td>@p.Descripcion</td>
                                 <td class="text-end text-nowrap">
                                     <button class="btn btn-sm btn-outline-primary" @onclick="() => EditarPago(p)">Editar</button>

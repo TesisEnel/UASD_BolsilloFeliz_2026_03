@@ -26,7 +26,7 @@
 
 <div class="card mb-4">
     <div class="card-body">
-        <h5 class="card-title">@(meta.IdMetaAhorro == 0 ? "Nueva meta de ahorro" : $"Editando meta {meta.IdMetaAhorro}")</h5>
+        <h5 class="card-title">@(meta.IdMetaAhorro == 0 ? "Nueva meta de ahorro" : $"Editando meta")</h5>
 
         <EditForm Model="meta" OnValidSubmit="GuardarMeta">
             <DataAnnotationsValidator />
@@ -98,7 +98,7 @@ else
         <table class="table table-striped align-middle">
             <thead>
                 <tr>
-                    <th>Id</th>
+                    
                     <th>Nombre</th>
                     <th>Moneda</th>
                     <th class="text-end">Objetivo</th>
@@ -113,7 +113,6 @@ else
                 @foreach (var x in metas)
                 {
                     <tr class="@(seleccionada?.IdMetaAhorro == x.IdMetaAhorro ? "table-active" : "")">
-                        <td>@x.IdMetaAhorro</td>
                         <td>@x.Nombre</td>
                         <td>@CodigoMoneda(x.IdMoneda)</td>
                         <td class="text-end">@x.MontoObjetivo.ToString("N2")</td>
@@ -188,7 +187,7 @@ else
                 <table class="table table-sm align-middle mt-3">
                     <thead>
                         <tr>
-                            <th>Id</th>
+                           
                             <th>Fecha</th>
                             <th class="text-end">Monto</th>
                             <th>Nota</th>
@@ -199,7 +198,7 @@ else
                         @foreach (var a in AportesDe(seleccionada))
                         {
                             <tr>
-                                <td>@a.IdAporteAhorro</td>
+                                
                                 <td>@a.Fecha.ToString("dd/MM/yyyy")</td>
                                 <td class="text-end">@a.Monto.ToString("N2")</td>
                                 <td>@a.Nota</td>
