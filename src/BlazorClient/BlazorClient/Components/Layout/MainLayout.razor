@@ -1,16 +1,17 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
 
-<AuthorizeView>
-    <Authorized>
-        <div class="sidebar">
-            <NavMenu />
-        </div>
-    </Authorized>
-</AuthorizeView>
+<div class="page">
+    <AuthorizeView>
+        <Authorized>
+            <div class="sidebar">
+                <NavMenu />
+            </div>
+        </Authorized>
+    </AuthorizeView>
 
     <main>
-        
+
         <div class="top-row px-4">
 
             <AuthorizeView>
@@ -31,6 +32,9 @@
                     </form>
 
                 </Authorized>
+                <NotAuthorized>
+                    <img src="logo-bolsillofeliz.png" alt="BolsilloFeliz" class="brand-logo me-auto" />
+                </NotAuthorized>
             </AuthorizeView>
 
         </div>
@@ -39,6 +43,7 @@
             @Body
         </article>
     </main>
+</div>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.

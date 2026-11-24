@@ -10,7 +10,7 @@
     /* Paleta del logo */
     --bf-navy: #001C44;         /* "Bolsillo" */
     --bf-green: #15A64D;        /* "Feliz" y barras */
-    --bf-green-dark: #0F8A3E;
+    --bf-green-dark: #0E7C39;
     --bf-forest: #14451F;       /* menú lateral (ya existente) */
     --bf-forest-deep: #0B2E13;  /* barra superior (ya existente) */
     --bf-mint: #ABDCB5;         /* fondo del logo */
@@ -25,8 +25,8 @@
     --bs-success-rgb: 21, 166, 77;
     --bs-warning: #FCB523;
     --bs-warning-rgb: 252, 181, 35;
-    --bs-link-color: #0F8A3E;
-    --bs-link-color-rgb: 15, 138, 62;
+    --bs-link-color: #0E7C39;
+    --bs-link-color-rgb: 14, 124, 57;
     --bs-link-hover-color: #0B6B30;
     --bs-link-hover-color-rgb: 11, 107, 48;
 }
@@ -57,16 +57,16 @@ a:hover      { color: #0B6B30; }
 
 .btn-primary {
     color: #fff;
-    background-color: var(--bf-green);
-    border-color: var(--bf-green);
+    background-color: var(--bf-green-dark);   /* verde un poco más oscuro: el texto blanco se lee bien */
+    border-color: var(--bf-green-dark);
 }
 
 .btn-primary:hover,
 .btn-primary:focus-visible,
 .btn-primary:active {
     color: #fff;
-    background-color: var(--bf-green-dark);
-    border-color: var(--bf-green-dark);
+    background-color: #0B6B30;
+    border-color: #0B6B30;
 }
 
 /* "Editar" en azul marino (el rojo de Eliminar se queda igual) */
@@ -180,41 +180,49 @@ body .nav-item .nav-link.active {
 
 .saldo-card { border-top: 4px solid var(--bf-green); }
 
-/* Estructura: menú a la izquierda, contenido a la derecha */
+/* ---- Estructura: menú a la izquierda, contenido a la derecha -------------- */
 @media (min-width: 641px) {
     body .page {
         display: flex;
         flex-direction: row;
     }
 
-        body .page > main {
-            flex: 1;
-            min-width: 0;
-        }
+    body .page > main {
+        flex: 1;
+        min-width: 0;
+    }
 }
 
-/* Íconos del menú alineados con el texto */
-body .nav-item .nav-link .bi {
-    display: inline-flex;
+/* ---- Íconos del menú: centrados y de tamaño acorde al texto --------------- */
+body .nav-item .nav-link {
+    font-size: .95rem;
+}
+
+body .nav-item .nav-link > .bi {
+    position: static !important;
+    top: 0 !important;
+    display: inline-flex !important;
     align-items: center;
     justify-content: center;
+    flex: 0 0 auto;
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+    margin-right: .75rem !important;
+    line-height: 1 !important;
+    font-size: 1.3rem;
+}
+
+body .nav-item .nav-link > .bi::before {
+    display: block;
     line-height: 1;
-    height: 1.25rem;
-    top: 0;
-    margin-right: .75rem;
+    vertical-align: 0;
 }
 
-/* Barra superior un poco más alta para que el logo se lea mejor */
-body .page .top-row {
-    height: 4.5rem;
-}
+/* ---- Barra superior un poco más alta para que el logo se lea mejor -------- */
+body .page .top-row { height: 4.5rem; }
 
-.brand-logo {
-    height: 52px;
-}
+.brand-logo { height: 52px; }
 
 @media (min-width: 641px) {
-    body .nav-scrollable {
-        height: calc(100vh - 4.5rem);
-    }
+    body .nav-scrollable { height: calc(100vh - 4.5rem); }
 }
