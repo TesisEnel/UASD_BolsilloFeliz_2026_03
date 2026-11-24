@@ -95,4 +95,128 @@ public class TransferenciasService(
 
         return Result.Success(eliminado);
     }
+
+    // ---------- Transferencia + transacción de forma atómica ----------
+
+    public async Task<Result<List<TransferenciaCompletaDto>>> ListarCompletas(int? idUsuario)
+    {
+        await using var contexto = await contextFactory.CreateDbContextAsync();
+
+        var lista = await contexto.Transferencias
+            .AsNoTracking()
+            .Where(x => idUsuario == null || x.IdUsuario == idUsuario)
+            .Select(x => new TransferenciaCompletaDto
+            {
+                IdTransferencia = x.IdTransferencia,
+                IdTransaccion = x.IdTransaccion,
+                IdUsuario = x.IdUsuario,
+                IdCuentaOrigen = x.IdCuentaOrigen,
+                IdCuentaDestino = x.IdCuentaDestino,
+                Monto = x.Transaccione.Monto,
+                Fecha = x.Transaccione.Fecha,
+                Descripcion = x.Transaccione.Descripcion,
+                Estado = x.Transaccione.Estado
+            })
+            .OrderByDescending(x => x.Fecha)
+            .ToListAsync();
+
+        return lista;
+    }
+
+    public async Task<Result> GuardarCompleta(TransferenciaCompletaDto dto)
+    {
+        if (dto.IdCuentaOrigen == dto.IdCuentaDestino)
+            return Result.Failure(new Error("CUENTAS_IGUALES",
+                "La cuenta de origen y la de destino deben ser distintas."));
+
+        await using var contexto = await contextFactory.CreateDbContextAsync();
+
+        var cuentas = await contexto.Cuentas
+            .Where(c => c.IdUsuario == dto.IdUsuario
+                        && (c.IdCuenta == dto.IdCuentaOrigen || c.IdCuenta == dto.IdCuentaDestino))
+            .ToListAsync();
+
+        var origen = cuentas.FirstOrDefault(c => c.IdCuenta == dto.IdCuentaOrigen);
+        var destino = cuentas.FirstOrDefault(c => c.IdCuenta == dto.IdCuentaDestino);
+
+        if (origen is null || destino is null)
+            return Result.Failure(new Error("CUENTA_NO_EXISTE",
+                "La cuenta de origen o destino no existe para este usuario."));
+
+        if (origen.IdMoneda != destino.IdMoneda)
+            return Result.Failure(new Error("MONEDAS_DISTINTAS",
+                "Las dos cuentas deben tener la misma moneda."));
+
+        var transferencia = dto.IdTransferencia == 0
+            ? null
+            : await contexto.Transferencias
+                .Include(x => x.Transaccione)
+                .FirstOrDefaultAsync(x => x.IdTransferencia == dto.IdTransferencia);
+
+        var nombre = $"Transferencia: {origen.Nombre} → {destino.Nombre}";
+        if (nombre.Length > 120) nombre = nombre[..120];
+
+        if (transferencia is null)
+        {
+            var transaccion = new Transaccion
+            {
+                IdUsuario = dto.IdUsuario,
+                IdCuenta = dto.IdCuentaOrigen,
+                Nombre = nombre,
+                Monto = dto.Monto,
+                Tipo = "Transferencia",
+                Fecha = dto.Fecha == default ? DateTime.Now : dto.Fecha,
+                Descripcion = dto.Descripcion,
+                Estado = dto.Estado
+            };
+
+            contexto.Transferencias.Add(new Transferencia
+            {
+                IdUsuario = dto.IdUsuario,
+                IdCuentaOrigen = dto.IdCuentaOrigen,
+                IdCuentaDestino = dto.IdCuentaDestino,
+                Transaccione = transaccion
+            });
+        }
+        else
+        {
+            var t = transferencia.Transaccione;
+            t.IdCuenta = dto.IdCuentaOrigen;
+            t.Nombre = nombre;
+            t.Monto = dto.Monto;
+            t.Fecha = dto.Fecha == default ? t.Fecha : dto.Fecha;
+            t.Descripcion = dto.Descripcion;
+            t.Estado = dto.Estado;
+
+            transferencia.IdCuentaOrigen = dto.IdCuentaOrigen;
+            transferencia.IdCuentaDestino = dto.IdCuentaDestino;
+        }
+
+        return Result.Success(await contexto.SaveChangesAsync() > 0);
+    }
+
+    public async Task<Result> EliminarCompleta(int idTransferencia)
+    {
+        await using var contexto = await contextFactory.CreateDbContextAsync();
+        await using var tx = await contexto.Database.BeginTransactionAsync();
+
+        var idTransaccion = await contexto.Transferencias
+            .Where(x => x.IdTransferencia == idTransferencia)
+            .Select(x => (int?)x.IdTransaccion)
+            .FirstOrDefaultAsync();
+
+        if (idTransaccion is null)
+            return Result.Success(false);
+
+        await contexto.Transferencias
+            .Where(x => x.IdTransferencia == idTransferencia)
+            .ExecuteDeleteAsync();
+
+        await contexto.Transacciones
+            .Where(x => x.IdTransaccion == idTransaccion)
+            .ExecuteDeleteAsync();
+
+        await tx.CommitAsync();
+        return Result.Success(true);
+    }
 }

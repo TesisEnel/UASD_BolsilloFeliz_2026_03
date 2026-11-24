@@ -1,0 +1,225 @@
+﻿@page "/categorias"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>Categorías</PageTitle>
+
+
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert alert-success" style="max-width:1100px;" role="alert">@mensaje</div>
+}
+@if (!string.IsNullOrEmpty(error) && !abierto)
+{
+    <div class="alert alert-danger" style="max-width:1100px;" role="alert">@error</div>
+}
+
+<div class="border bg-white d-flex flex-column w-100" style="max-width:1100px; height:70vh; border-radius:1.25rem; overflow:hidden;">
+    <div class="d-flex align-items-center justify-content-between px-4 py-3 border-bottom">
+        <h1 class="h4 m-0">Categorías</h1>
+        <button type="button" class="btn btn-primary" @onclick="Nueva">Crear</button>
+    </div>
+
+    <div class="px-3" style="flex:1; overflow-y:auto;">
+        @if (lista is null)
+        {
+            <p class="text-center text-muted my-4">Cargando...</p>
+        }
+        else if (lista.Count == 0)
+        {
+            <p class="text-center text-muted my-4">Aún no hay registros.</p>
+        }
+        else
+        {
+            @foreach (var x in lista)
+            {
+                <div class="d-flex align-items-center gap-3 px-2 py-3 border-bottom">
+                    <div style="flex:1; min-width:0;">
+                        <div class="fw-semibold text-truncate">@x.Nombre</div>
+                        <div class="text-muted small text-truncate">@(x.Tipo ? "Ingreso" : "Gasto")@(string.IsNullOrWhiteSpace(x.Descripcion) ? "" : ", " + x.Descripcion)</div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => Editar(x)">Editar</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(x)">Eliminar</button>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@if (abierto)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <EditForm Model="item" OnValidSubmit="Guardar">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(EsNuevo ? "Nueva categoría" : "Editar categoría")</h5>
+                        <button type="button" class="btn-close" aria-label="Cerrar" @onclick="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(error))
+                        {
+                            <div class="alert alert-danger" role="alert">@error</div>
+                        }
+                        <ValidationSummary />
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <InputText class="form-control" @bind-Value="item.Nombre" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tipo</label>
+                            <InputSelect class="form-select" @bind-Value="TipoTexto">
+                                <option value="Gasto">Gasto</option>
+                                <option value="Ingreso">Ingreso</option>
+                            </InputSelect>
+                        </div>
+                        <div>
+                            <label class="form-label">Descripción</label>
+                            <InputText class="form-control" @bind-Value="item.Descripcion" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="Cerrar">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" disabled="@cargando">Guardar</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private int idUsuario;
+    private bool abierto;
+    private bool cargando;
+    private string? mensaje;
+    private string? error;
+
+    private List<CategoriaDto>? lista;
+    private CategoriaDto item = new();
+
+    private bool EsNuevo => item.IdCategoria == 0;
+    private int IdItem => item.IdCategoria;
+    private static int IdDe(CategoriaDto x) => x.IdCategoria;
+    private static string Descripcion(CategoriaDto x) => $"la categoría {x.Nombre}";
+
+    // true = Ingreso, false = Gasto
+    private string TipoTexto
+    {
+        get => item.Tipo ? "Ingreso" : "Gasto";
+        set => item.Tipo = value == "Ingreso";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var usuarios = await Http.GetFromJsonAsync<List<UsuarioDto>>("api/usuarios") ?? new();
+            idUsuario = usuarios.Where(x => x.Estado).OrderBy(x => x.IdUsuario)
+                                .Select(x => x.IdUsuario).FirstOrDefault();
+            if (idUsuario == 0)
+            {
+                error = "No hay usuarios registrados.";
+                return;
+            }
+
+            await Cargar();
+        }
+        catch (Exception ex)
+        {
+            error = $"Error al cargar: {ex.Message}";
+        }
+        finally
+        {
+            lista ??= new();
+        }
+    }
+
+    private async Task Cargar() =>
+        lista = await Http.GetFromJsonAsync<List<CategoriaDto>>($"api/categorias?idUsuario={idUsuario}") ?? new();
+
+    private void Nueva()
+    {
+        item = new() { IdUsuario = idUsuario };
+        mensaje = null; error = null; abierto = true;
+    }
+
+    private void Editar(CategoriaDto x)
+    {
+        item = new()
+        {
+            IdCategoria = x.IdCategoria, IdUsuario = x.IdUsuario,
+            Nombre = x.Nombre, Tipo = x.Tipo, Descripcion = x.Descripcion
+        };
+        mensaje = null; error = null; abierto = true;
+    }
+
+    private void Cerrar()
+    {
+        abierto = false;
+        error = null;
+    }
+
+    private async Task Guardar()
+    {
+        error = null;
+        cargando = true;
+        try
+        {
+            var nuevo = EsNuevo;
+            var respuesta = nuevo
+                ? await Http.PostAsJsonAsync("api/categorias", item)
+                : await Http.PutAsJsonAsync($"api/categorias/{IdItem}", item);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                abierto = false;
+                mensaje = nuevo ? "Categoría creada correctamente." : "Categoría actualizada correctamente.";
+                await Cargar();
+            }
+            else
+            {
+                error = await ApiErrores.LeerAsync(respuesta);
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task Eliminar(CategoriaDto x)
+    {
+        mensaje = null;
+        error = null;
+
+        if (!await JS.InvokeAsync<bool>("confirm", $"¿Eliminar {Descripcion(x)}?"))
+            return;
+
+        try
+        {
+            var respuesta = await Http.DeleteAsync($"api/categorias/{IdDe(x)}");
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Categoría eliminada correctamente.";
+                await Cargar();
+            }
+            else
+            {
+                error = await ApiErrores.LeerAsync(respuesta);
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Error: {ex.Message}";
+        }
+    }
+}

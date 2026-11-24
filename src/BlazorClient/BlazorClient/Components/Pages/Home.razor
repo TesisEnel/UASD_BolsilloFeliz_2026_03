@@ -1,27 +1,127 @@
 ﻿@page "/"
+@using BlazorClient.Client.BlazorDTOS
+@using BlazorClient.Client
+@inject HttpClient Http
 
 <PageTitle>Inicio</PageTitle>
 
-<h1>BolsilloFeliz</h1>
+<h1 class="h3 mb-3">BolsilloFeliz</h1>
 
-<div class="row g-3 my-3">
-    @foreach (var m in new[] {
-        new { Titulo = "Monedas", Ruta = "monedas", Texto = "Catálogo de monedas" },
-        new { Titulo = "Entidades", Ruta = "entidades", Texto = "Bancos y personas con las que tratas" },
-        new { Titulo = "Préstamos", Ruta = "prestamos", Texto = "Dinero que prestaste" },
-        new { Titulo = "Deudas", Ruta = "deudas", Texto = "Dinero que debes" },
-        new { Titulo = "Ahorros", Ruta = "ahorros", Texto = "Tus metas de ahorro" } })
-    {
-        <div class="col-12 col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">@m.Titulo</h5>
-                    <p class="card-text text-muted">@m.Texto</p>
-                    <a href="@m.Ruta" class="btn btn-primary mt-auto">Abrir</a>
-                </div>
-            </div>
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger" role="alert">@error</div>
+}
+
+<div class="row g-3">
+    <div class="col-12 col-xl-8">
+
+        @* ---- Saldos de cuentas: rectángulo gris con scroll horizontal ---- *@
+        <div class="home-panel home-saldos mb-3">
+            @if (datos is null)
+            {
+                <span class="text-muted">Cargando...</span>
+            }
+            else if (datos.Saldos.Count == 0)
+            {
+                <span class="text-muted">No hay cuentas. Cree una en <a href="cuentas">Cuentas</a>.</span>
+            }
+            else
+            {
+                @foreach (var c in datos.Saldos)
+                {
+                    <div class="saldo-card">
+                        <div class="small text-muted text-truncate">@c.Tipo</div>
+                        <div class="fw-semibold text-truncate">@c.Nombre</div>
+                        <div class="saldo-monto @(c.Saldo < 0 ? "text-danger" : "text-dark")">
+                            @c.SimboloMoneda @c.Saldo.ToString("N2")
+                        </div>
+                        <div class="small text-muted">@c.CodigoMoneda</div>
+                    </div>
+                }
+            }
         </div>
-    }
+
+        @* ---- Próximas y últimas transacciones: rectángulo gris con scroll vertical ---- *@
+        <div class="home-panel home-movimientos">
+            <h2 class="h6 text-uppercase text-muted">Próximas transacciones</h2>
+            @if (datos is null)
+            {
+                <p class="text-muted small">Cargando...</p>
+            }
+            else if (datos.Proximas.Count == 0)
+            {
+                <p class="text-muted small">No hay transacciones pendientes.</p>
+            }
+            else
+            {
+                @foreach (var m in datos.Proximas)
+                {
+                    <MovimientoFila M="m" />
+                }
+            }
+
+            <hr class="my-3" />
+
+            <h2 class="h6 text-uppercase text-muted">Últimas transacciones</h2>
+            @if (datos is null)
+            {
+                <p class="text-muted small">Cargando...</p>
+            }
+            else if (datos.Ultimas.Count == 0)
+            {
+                <p class="text-muted small">Aún no hay transacciones realizadas.</p>
+            }
+            else
+            {
+                @foreach (var m in datos.Ultimas)
+                {
+                    <MovimientoFila M="m" />
+                }
+            }
+        </div>
+    </div>
+
+    @* ---- Gráfica semanal al lado ---- *@
+    <div class="col-12 col-xl-4">
+        <div class="home-panel">
+            <h2 class="h6 text-uppercase text-muted">Ingresos y gastos semanales</h2>
+            @if (datos is null)
+            {
+                <p class="text-muted small">Cargando...</p>
+            }
+            else
+            {
+                <GraficaSemanal Datos="datos.Semanas" />
+            }
+        </div>
+    </div>
 </div>
 
+@code {
+    private DashboardDto? datos;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var usuarios = await Http.GetFromJsonAsync<List<UsuarioDto>>("api/usuarios") ?? new();
+            var idUsuario = usuarios.Where(x => x.Estado).OrderBy(x => x.IdUsuario)
+                                    .Select(x => x.IdUsuario).FirstOrDefault();
+            if (idUsuario == 0)
+            {
+                error = "No hay usuarios registrados.";
+                datos = new();
+                return;
+            }
+
+            datos = await Http.GetFromJsonAsync<DashboardDto>($"api/dashboard?idUsuario={idUsuario}") ?? new();
+        }
+        catch (Exception ex)
+        {
+            error = $"Error al cargar: {ex.Message}";
+            datos ??= new();
+        }
+    }
+}
 

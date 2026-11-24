@@ -1,0 +1,15 @@
+﻿<div class="d-flex align-items-center gap-2 py-2 border-bottom">
+    <div style="flex:1; min-width:0;">
+        <div class="fw-semibold text-truncate">@M.Nombre</div>
+        <div class="small text-muted text-truncate">@M.Fecha.ToString("dd/MM/yyyy")@(M.Cuenta is null ? "" : " · " + M.Cuenta) · @M.Tipo</div>
+    </div>
+    <div class="fw-semibold text-end @Clase">@Signo@M.Monto.ToString("N2")</div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public MovimientoDto M { get; set; } = new();
+
+    private bool EsGasto => M.Tipo is "Gasto" or "Pago de deuda" or "Prestamo otorgado";
+    private string Signo => M.EsIngreso ? "+" : EsGasto ? "-" : "";
+    private string Clase => M.EsIngreso ? "text-success" : EsGasto ? "text-danger" : "text-secondary";
+}
