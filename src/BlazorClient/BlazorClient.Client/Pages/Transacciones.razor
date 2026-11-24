@@ -1,0 +1,337 @@
+﻿@page "/transacciones"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>Transacciones</PageTitle>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert alert-success" style="max-width:1100px;" role="alert">@mensaje</div>
+}
+@if (!string.IsNullOrEmpty(error) && !abierto)
+{
+    <div class="alert alert-danger" style="max-width:1100px;" role="alert">@error</div>
+}
+
+<div class="border bg-white d-flex flex-column w-100" style="max-width:1100px; height:70vh; border-radius:1.25rem; overflow:hidden;">
+    <div class="d-flex align-items-center justify-content-between gap-2 px-4 py-3 border-bottom flex-wrap">
+        <h1 class="h4 m-0">Transacciones</h1>
+        <div class="d-flex gap-2 align-items-center">
+            <select class="form-select form-select-sm" style="width:auto;" @bind="filtroTipo">
+                <option value="">Todos los tipos</option>
+                @foreach (var t in todosTipos)
+                {
+                    <option value="@t">@t</option>
+                }
+            </select>
+            <select class="form-select form-select-sm" style="width:auto;" @bind="filtroEstado">
+                <option value="">Todos los estados</option>
+                @foreach (var e in estados)
+                {
+                    <option value="@e">@e</option>
+                }
+            </select>
+            <button type="button" class="btn btn-primary" @onclick="Nueva">Crear</button>
+        </div>
+    </div>
+
+    <div class="px-3" style="flex:1; overflow-y:auto;">
+        @if (lista is null)
+        {
+            <p class="text-center text-muted my-4">Cargando...</p>
+        }
+        else if (Filtrada.Count == 0)
+        {
+            <p class="text-center text-muted my-4">Aún no hay registros.</p>
+        }
+        else
+        {
+            @foreach (var x in Filtrada)
+            {
+                <div class="d-flex align-items-center gap-3 px-2 py-3 border-bottom">
+                    <div style="flex:1; min-width:0;">
+                        <div class="fw-semibold text-truncate">@x.Nombre</div>
+                        <div class="text-muted small text-truncate">
+                            @x.Tipo, @x.Fecha.ToString("dd/MM/yyyy"), @NombreCuenta(x.IdCuenta)@(x.IdCategoria is null ? "" : ", " + NombreCategoria(x.IdCategoria))@(string.IsNullOrWhiteSpace(x.Descripcion) ? "" : ", " + x.Descripcion)
+                        </div>
+                    </div>
+                    <span class="badge @ClaseEstado(x.Estado)">@x.Estado</span>
+                    <div class="fw-semibold text-end @(EsIngreso(x.Tipo) ? "text-success" : EsGasto(x.Tipo) ? "text-danger" : "text-secondary")" style="min-width:110px;">
+                        @(EsIngreso(x.Tipo) ? "+" : EsGasto(x.Tipo) ? "-" : "")@x.Monto.ToString("N2")
+                    </div>
+                    @if (x.Tipo == "Transferencia")
+                    {
+                        <a class="btn btn-sm btn-outline-secondary" href="transferencias">Ver en Transferencias</a>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => Editar(x)">Editar</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(x)">Eliminar</button>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@if (abierto)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <EditForm Model="item" OnValidSubmit="Guardar">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(EsNuevo ? "Nueva transacción" : "Editar transacción")</h5>
+                        <button type="button" class="btn-close" aria-label="Cerrar" @onclick="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(error))
+                        {
+                            <div class="alert alert-danger" role="alert">@error</div>
+                        }
+                        <ValidationSummary />
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <InputText class="form-control" @bind-Value="item.Nombre" />
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Tipo</label>
+                                <InputSelect class="form-select" @bind-Value="item.Tipo">
+                                    @foreach (var t in tiposEditables)
+                                    {
+                                        <option value="@t">@t</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Monto</label>
+                                <InputNumber class="form-control" @bind-Value="item.Monto" />
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Cuenta</label>
+                                <InputSelect class="form-select" @bind-Value="idCuentaSel">
+                                    <option value="0">Sin cuenta</option>
+                                    @foreach (var c in cuentas)
+                                    {
+                                        <option value="@c.IdCuenta">@c.Nombre</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Categoría</label>
+                                <InputSelect class="form-select" @bind-Value="idCategoriaSel">
+                                    <option value="0">Sin categoría</option>
+                                    @foreach (var c in CategoriasDisponibles)
+                                    {
+                                        <option value="@c.IdCategoria">@c.Nombre</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Fecha</label>
+                                <InputDate class="form-control" @bind-Value="item.Fecha" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Estado</label>
+                                <InputSelect class="form-select" @bind-Value="item.Estado">
+                                    @foreach (var e in estados)
+                                    {
+                                        <option value="@e">@e</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Descripción</label>
+                            <InputText class="form-control" @bind-Value="item.Descripcion" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="Cerrar">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" disabled="@cargando">Guardar</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private int idUsuario;
+    private bool abierto;
+    private bool cargando;
+    private string? mensaje;
+    private string? error;
+    private string filtroTipo = "";
+    private string filtroEstado = "";
+
+    private static readonly string[] estados = { "Completada", "Pendiente", "Anulada" };
+    private static readonly string[] tiposEditables =
+        { "Gasto", "Ingreso", "Pago de deuda", "Abono de prestamo", "Deuda recibida", "Prestamo otorgado" };
+    private static readonly string[] todosTipos = tiposEditables.Append("Transferencia").ToArray();
+
+    private List<TransaccionDto>? lista;
+    private List<CuentaDto> cuentas = new();
+    private List<CategoriaDto> categorias = new();
+    private TransaccionDto item = new();
+
+    private int idCuentaSel
+    {
+        get => item.IdCuenta ?? 0;
+        set => item.IdCuenta = value == 0 ? null : value;
+    }
+
+    private int idCategoriaSel
+    {
+        get => item.IdCategoria ?? 0;
+        set => item.IdCategoria = value == 0 ? null : value;
+    }
+
+    private bool EsNuevo => item.IdTransaccion == 0;
+
+    private List<TransaccionDto> Filtrada => (lista ?? new())
+        .Where(x => (filtroTipo == "" || x.Tipo == filtroTipo) && (filtroEstado == "" || x.Estado == filtroEstado))
+        .OrderByDescending(x => x.Fecha).ThenByDescending(x => x.IdTransaccion)
+        .ToList();
+
+    // Solo las categorías que corresponden al tipo (Ingreso / Gasto); para los demás tipos se muestran todas.
+    private IEnumerable<CategoriaDto> CategoriasDisponibles => item.Tipo switch
+    {
+        "Ingreso" => categorias.Where(c => c.Tipo),
+        "Gasto" => categorias.Where(c => !c.Tipo),
+        _ => categorias
+    };
+
+    private static bool EsIngreso(string tipo) => tipo is "Ingreso" or "Deuda recibida" or "Abono de prestamo";
+    private static bool EsGasto(string tipo) => tipo is "Gasto" or "Pago de deuda" or "Prestamo otorgado";
+
+    private static string ClaseEstado(string estado) => estado switch
+    {
+        "Completada" => "text-bg-success",
+        "Pendiente" => "text-bg-warning",
+        _ => "text-bg-secondary"
+    };
+
+    private string NombreCuenta(int? id) => cuentas.FirstOrDefault(c => c.IdCuenta == id)?.Nombre ?? "Sin cuenta";
+    private string NombreCategoria(int? id) => categorias.FirstOrDefault(c => c.IdCategoria == id)?.Nombre ?? "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var usuarios = await Http.GetFromJsonAsync<List<UsuarioDto>>("api/usuarios") ?? new();
+            idUsuario = usuarios.Where(x => x.Estado).OrderBy(x => x.IdUsuario)
+                                .Select(x => x.IdUsuario).FirstOrDefault();
+            if (idUsuario == 0)
+            {
+                error = "No hay usuarios registrados.";
+                return;
+            }
+
+            cuentas = await Http.GetFromJsonAsync<List<CuentaDto>>($"api/cuentas?idUsuario={idUsuario}") ?? new();
+            categorias = await Http.GetFromJsonAsync<List<CategoriaDto>>($"api/categorias?idUsuario={idUsuario}") ?? new();
+            await Cargar();
+        }
+        catch (Exception ex)
+        {
+            error = $"Error al cargar: {ex.Message}";
+        }
+        finally
+        {
+            lista ??= new();
+        }
+    }
+
+    private async Task Cargar() =>
+        lista = await Http.GetFromJsonAsync<List<TransaccionDto>>($"api/transacciones?idUsuario={idUsuario}") ?? new();
+
+    private void Nueva()
+    {
+        item = new() { IdUsuario = idUsuario, Fecha = DateTime.Today };
+        mensaje = null; error = null; abierto = true;
+    }
+
+    private void Editar(TransaccionDto x)
+    {
+        item = new()
+        {
+            IdTransaccion = x.IdTransaccion, IdUsuario = x.IdUsuario, IdCuenta = x.IdCuenta,
+            IdCategoria = x.IdCategoria, Nombre = x.Nombre, Monto = x.Monto, Tipo = x.Tipo,
+            Fecha = x.Fecha, Descripcion = x.Descripcion, Estado = x.Estado
+        };
+        mensaje = null; error = null; abierto = true;
+    }
+
+    private void Cerrar()
+    {
+        abierto = false;
+        error = null;
+    }
+
+    private async Task Guardar()
+    {
+        error = null;
+        cargando = true;
+        try
+        {
+            var nuevo = EsNuevo;
+            var respuesta = nuevo
+                ? await Http.PostAsJsonAsync("api/transacciones", item)
+                : await Http.PutAsJsonAsync($"api/transacciones/{item.IdTransaccion}", item);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                abierto = false;
+                mensaje = nuevo ? "Transacción creada correctamente." : "Transacción actualizada correctamente.";
+                await Cargar();
+            }
+            else
+            {
+                error = await ApiErrores.LeerAsync(respuesta);
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task Eliminar(TransaccionDto x)
+    {
+        mensaje = null;
+        error = null;
+
+        if (!await JS.InvokeAsync<bool>("confirm", $"¿Eliminar la transacción {x.Nombre}?"))
+            return;
+
+        try
+        {
+            var respuesta = await Http.DeleteAsync($"api/transacciones/{x.IdTransaccion}");
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Transacción eliminada correctamente.";
+                await Cargar();
+            }
+            else
+            {
+                error = await ApiErrores.LeerAsync(respuesta);
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Error: {ex.Message}";
+        }
+    }
+}
