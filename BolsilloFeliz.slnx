@@ -10,4 +10,5 @@
     <Project Path="src/BolsilloFeliz.Domain/BolsilloFeliz.Domain.csproj" />
     <Project Path="src/BolsilloFeliz.Infrastructure/BolsilloFeliz.Infrastructure.csproj" />
   </Folder>
+  <Project Path="BolsilloFeliz.Tests/BolsilloFeliz.Tests.csproj" Id="c8bac7a2-83ec-4219-89d0-1c3a86025a2e" />
 </Solution>
