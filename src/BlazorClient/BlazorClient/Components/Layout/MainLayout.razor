@@ -2,12 +2,16 @@
 @using Microsoft.AspNetCore.Components.Authorization
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+    <AuthorizeView>
+        <Authorized>
+            <div class="sidebar">
+                <NavMenu />
+            </div>
+        </Authorized>
+    </AuthorizeView>
 
     <main>
-        
+
         <div class="top-row px-4">
 
             <AuthorizeView>
@@ -28,6 +32,9 @@
                     </form>
 
                 </Authorized>
+                <NotAuthorized>
+                    <img src="logo-bolsillofeliz.png" alt="BolsilloFeliz" class="brand-logo me-auto" />
+                </NotAuthorized>
             </AuthorizeView>
 
         </div>
