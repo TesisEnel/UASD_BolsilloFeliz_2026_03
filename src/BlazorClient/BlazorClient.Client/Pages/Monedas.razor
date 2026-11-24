@@ -19,7 +19,7 @@
 
 <div class="card mb-4">
     <div class="card-body">
-        <h5 class="card-title">@(moneda.IdMoneda == 0 ? "Nueva moneda" : $"Editando moneda {moneda.IdMoneda}")</h5>
+        <h5 class="card-title">@(moneda.IdMoneda == 0 ? "Nueva moneda" : "Editando moneda")</h5>
 
         <EditForm Model="moneda" OnValidSubmit="Guardar">
             <DataAnnotationsValidator />
@@ -69,10 +69,11 @@ else if (monedas.Count == 0)
 }
 else
 {
-    <table class="table table-striped align-middle">
+    <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
         <thead>
             <tr>
-                <th>Id</th>
+                
                 <th>Código</th>
                 <th>Nombre</th>
                 <th>Símbolo</th>
@@ -84,7 +85,7 @@ else
             @foreach (var m in monedas)
             {
                 <tr>
-                    <td>@m.IdMoneda</td>
+                    
                     <td>@m.Codigo</td>
                     <td>@m.Nombre</td>
                     <td>@m.Simbolo</td>
@@ -97,6 +98,7 @@ else
             }
         </tbody>
     </table>
+    </div>
 }
 
 @code {

@@ -95,4 +95,16 @@ public class UsuariosController(UsuariosService service) : ControllerBase
             _ => BadRequest(cuerpo)
         };
     }
+
+    // POST api/usuarios/login
+    [HttpPost("login")]
+    public async Task<IActionResult> IniciarSesion(LoginDto dto)
+    {
+        var resultado = await service.IniciarSesion(dto);
+        if (resultado.IsFailure) return Falla(resultado.Error);
+
+        return resultado.Value is null
+            ? Unauthorized(new { codigo = "CREDENCIALES_INVALIDAS", mensaje = "Email o contraseña incorrectos." })
+            : Ok(resultado.Value);
+    }
 }

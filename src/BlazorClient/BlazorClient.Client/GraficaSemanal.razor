@@ -1,0 +1,72 @@
+﻿@* Gráfica de barras agrupadas (ingresos vs gastos por semana) en SVG puro, sin librerías. *@
+
+<div class="grafica-semanal">
+    @if (Datos.Count == 0)
+    {
+        <p class="text-muted text-center my-4">Sin datos para graficar.</p>
+    }
+    else
+    {
+        <svg viewBox="0 0 @Ancho @Alto" class="w-100" role="img" aria-label="Ingresos y gastos semanales">
+            @for (var i = 0; i <= 4; i++)
+            {
+                var y = Base - (Base - Margen) * i / 4.0;
+                <line x1="@Izq" y1="@F(y)" x2="@(Ancho - 8)" y2="@F(y)" stroke="#dee2e6" stroke-width="1" />
+                @Etiqueta(Izq - 6, y + 3, "end", Abreviar(Maximo * i / 4m))
+            }
+
+            @for (var i = 0; i < Datos.Count; i++)
+            {
+                var d = Datos[i];
+                var x0 = Izq + i * Paso + (Paso - 2 * AnchoBarra - 2) / 2;
+                var hI = Escala(d.Ingresos);
+                var hG = Escala(d.Gastos);
+                <rect x="@F(x0)" y="@F(Base - hI)" width="@AnchoBarra" height="@F(hI)" rx="3" fill="#198754">
+                    <title>Ingresos: @d.Ingresos.ToString("N2")</title>
+                </rect>
+                <rect x="@F(x0 + AnchoBarra + 2)" y="@F(Base - hG)" width="@AnchoBarra" height="@F(hG)" rx="3" fill="#dc3545">
+                    <title>Gastos: @d.Gastos.ToString("N2")</title>
+                </rect>
+                @Etiqueta(Izq + i * Paso + Paso / 2, Base + 14, "middle", d.Inicio.ToString("dd/MM"))
+            }
+        </svg>
+
+        <div class="d-flex justify-content-center gap-3 small">
+            <span><span class="d-inline-block rounded-1 me-1" style="width:10px;height:10px;background:#198754;"></span>Ingresos</span>
+            <span><span class="d-inline-block rounded-1 me-1" style="width:10px;height:10px;background:#dc3545;"></span>Gastos</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public List<ResumenSemanalDto> Datos { get; set; } = new();
+
+    private const int Ancho = 420, Alto = 260, Izq = 44, Margen = 12, Base = 224;
+
+    private double Paso => (Ancho - Izq - 8.0) / Math.Max(Datos.Count, 1);
+    private double AnchoBarra => Math.Max(4, Math.Min(18, (Paso - 8) / 2));
+
+    private decimal Maximo
+    {
+        get
+        {
+            var max = Datos.Count == 0 ? 0 : Datos.Max(d => Math.Max(d.Ingresos, d.Gastos));
+            return max <= 0 ? 1 : max;
+        }
+    }
+
+    private double Escala(decimal valor) => (double)(valor / Maximo) * (Base - Margen);
+
+    // Razor reserva la etiqueta <text>, así que las etiquetas SVG se generan como markup.
+    private static MarkupString Etiqueta(double x, double y, string anchor, string texto) =>
+        new($"<text x=\"{F(x)}\" y=\"{F(y)}\" text-anchor=\"{anchor}\" font-size=\"10\" fill=\"#6c757d\">{System.Net.WebUtility.HtmlEncode(texto)}</text>");
+
+    private static string F(double v) => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static string Abreviar(decimal v) => v switch
+    {
+        >= 1_000_000m => (v / 1_000_000m).ToString("0.#") + "M",
+        >= 1_000m => (v / 1_000m).ToString("0.#") + "k",
+        _ => v.ToString("0")
+    };
+}

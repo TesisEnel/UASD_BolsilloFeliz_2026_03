@@ -3,6 +3,7 @@ using BolsilloFeliz.Application.DTOs;
 using BolsilloFeliz.Domain.Entities;
 using BolsilloFeliz.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 
 namespace BolsilloFeliz.Application.Services;
@@ -134,21 +135,11 @@ public class UsuariosService(
     {
         await using var contexto = await contextFactory.CreateDbContextAsync();
 
-        try
-        {
-            var eliminado = await contexto.Usuarios
-                .Where(u => u.IdUsuario == idUsuario)
-                .ExecuteDeleteAsync() > 0;
+        var filas = await contexto.Usuarios
+            .Where(u => u.IdUsuario == idUsuario)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.Estado, false));
 
-            return Result.Success(eliminado);
-        }
-        catch (Exception ex) when (ex is DbUpdateException
-                                   || ex is Microsoft.Data.SqlClient.SqlException { Number: 547 })
-        {
-            // 547 = violación de llave foránea
-            return Result.Failure(new Error("TIENE_DATOS_RELACIONADOS",
-                "No se puede eliminar: el usuario tiene cuentas, transacciones u otros datos asociados."));
-        }
+        return Result.Success(filas > 0);
     }
 
     // Método adicional (igual que GetPrestamosPendientes en el ejemplo)
@@ -169,5 +160,32 @@ public class UsuariosService(
         await contexto.SaveChangesAsync();
 
         return Result.Success();
+    }
+
+   
+
+    public async Task<Result<UsuarioDto?>> IniciarSesion(LoginDto dto)
+    {
+        var email = NormalizarEmail(dto.Email);
+
+        await using var contexto = await contextFactory.CreateDbContextAsync();
+
+        var usuario = await contexto.Usuarios
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Email == email && u.Estado);
+
+        if (usuario is null || !BCrypt.Net.BCrypt.Verify(dto.Password, usuario.PasswordHash))
+            return (UsuarioDto?)null;
+
+        return new UsuarioDto
+        {
+            IdUsuario = usuario.IdUsuario,
+            IdRol = usuario.IdRol,
+            Nombres = usuario.Nombres,
+            Apellidos = usuario.Apellidos,
+            Email = usuario.Email,
+            FechaRegistro = usuario.FechaRegistro,
+            Estado = usuario.Estado
+        };
     }
 }

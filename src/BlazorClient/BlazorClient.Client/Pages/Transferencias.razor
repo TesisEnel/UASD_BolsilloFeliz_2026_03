@@ -1,0 +1,280 @@
+﻿@page "/transferencias"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>Transferencias</PageTitle>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert alert-success" style="max-width:1100px;" role="alert">@mensaje</div>
+}
+@if (!string.IsNullOrEmpty(error) && !abierto)
+{
+    <div class="alert alert-danger" style="max-width:1100px;" role="alert">@error</div>
+}
+
+<div class="border bg-white d-flex flex-column w-100" style="max-width:1100px; height:70vh; border-radius:1.25rem; overflow:hidden;">
+    <div class="d-flex align-items-center justify-content-between px-4 py-3 border-bottom">
+        <h1 class="h4 m-0">Transferencias</h1>
+        <button type="button" class="btn btn-primary" @onclick="Nueva" disabled="@(cuentas.Count < 2)">Crear</button>
+    </div>
+
+    <div class="px-3" style="flex:1; overflow-y:auto;">
+        @if (lista is null)
+        {
+            <p class="text-center text-muted my-4">Cargando...</p>
+        }
+        else if (cuentas.Count < 2)
+        {
+            <p class="text-center text-muted my-4">Necesita al menos dos cuentas para transferir. Créelas en <a href="cuentas">Cuentas</a>.</p>
+        }
+        else if (lista.Count == 0)
+        {
+            <p class="text-center text-muted my-4">Aún no hay registros.</p>
+        }
+        else
+        {
+            @foreach (var x in lista)
+            {
+                <div class="d-flex align-items-center gap-3 px-2 py-3 border-bottom">
+                    <div style="flex:1; min-width:0;">
+                        <div class="fw-semibold text-truncate">@NombreCuenta(x.IdCuentaOrigen) → @NombreCuenta(x.IdCuentaDestino)</div>
+                        <div class="text-muted small text-truncate">@x.Fecha.ToString("dd/MM/yyyy")@(string.IsNullOrWhiteSpace(x.Descripcion) ? "" : ", " + x.Descripcion)</div>
+                    </div>
+                    <span class="badge @ClaseEstado(x.Estado)">@x.Estado</span>
+                    <div class="fw-semibold text-end" style="min-width:120px;">@CodigoMoneda(x.IdCuentaOrigen) @x.Monto.ToString("N2")</div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => Editar(x)">Editar</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(x)">Eliminar</button>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@if (abierto)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <EditForm Model="item" OnValidSubmit="Guardar">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(EsNuevo ? "Nueva transferencia" : "Editar transferencia")</h5>
+                        <button type="button" class="btn-close" aria-label="Cerrar" @onclick="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(error))
+                        {
+                            <div class="alert alert-danger" role="alert">@error</div>
+                        }
+                        <ValidationSummary />
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Cuenta origen</label>
+                                <InputSelect class="form-select" @bind-Value="item.IdCuentaOrigen">
+                                    <option value="0">Seleccione...</option>
+                                    @foreach (var c in cuentas)
+                                    {
+                                        <option value="@c.IdCuenta">@c.Nombre (@CodigoMoneda(c.IdCuenta))</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Cuenta destino</label>
+                                <InputSelect class="form-select" @bind-Value="item.IdCuentaDestino">
+                                    <option value="0">Seleccione...</option>
+                                    @foreach (var c in cuentas.Where(c => c.IdCuenta != item.IdCuentaOrigen))
+                                    {
+                                        <option value="@c.IdCuenta">@c.Nombre (@CodigoMoneda(c.IdCuenta))</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Monto</label>
+                                <InputNumber class="form-control" @bind-Value="item.Monto" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Fecha</label>
+                                <InputDate class="form-control" @bind-Value="item.Fecha" />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Estado</label>
+                            <InputSelect class="form-select" @bind-Value="item.Estado">
+                                @foreach (var e in estados)
+                                {
+                                    <option value="@e">@e</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div>
+                            <label class="form-label">Descripción</label>
+                            <InputText class="form-control" @bind-Value="item.Descripcion" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="Cerrar">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" disabled="@cargando">Guardar</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private int idUsuario;
+    private bool abierto;
+    private bool cargando;
+    private string? mensaje;
+    private string? error;
+
+    private static readonly string[] estados = { "Completada", "Pendiente", "Anulada" };
+
+    private List<TransferenciaCompletaDto>? lista;
+    private List<CuentaDto> cuentas = new();
+    private List<MonedaDto> monedas = new();
+    private TransferenciaCompletaDto item = new();
+
+    private bool EsNuevo => item.IdTransferencia == 0;
+
+    private string NombreCuenta(int id) => cuentas.FirstOrDefault(c => c.IdCuenta == id)?.Nombre ?? $"Cuenta {id}";
+
+    private string CodigoMoneda(int idCuenta)
+    {
+        var idMoneda = cuentas.FirstOrDefault(c => c.IdCuenta == idCuenta)?.IdMoneda;
+        return monedas.FirstOrDefault(m => m.IdMoneda == idMoneda)?.Codigo ?? "";
+    }
+
+    private static string ClaseEstado(string estado) => estado switch
+    {
+        "Completada" => "text-bg-success",
+        "Pendiente" => "text-bg-warning",
+        _ => "text-bg-secondary"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var usuarios = await Http.GetFromJsonAsync<List<UsuarioDto>>("api/usuarios") ?? new();
+            idUsuario = usuarios.Where(x => x.Estado).OrderBy(x => x.IdUsuario)
+                                .Select(x => x.IdUsuario).FirstOrDefault();
+            if (idUsuario == 0)
+            {
+                error = "No hay usuarios registrados.";
+                return;
+            }
+
+            monedas = await Http.GetFromJsonAsync<List<MonedaDto>>("api/monedas") ?? new();
+            cuentas = await Http.GetFromJsonAsync<List<CuentaDto>>($"api/cuentas?idUsuario={idUsuario}") ?? new();
+            await Cargar();
+        }
+        catch (Exception ex)
+        {
+            error = $"Error al cargar: {ex.Message}";
+        }
+        finally
+        {
+            lista ??= new();
+        }
+    }
+
+    private async Task Cargar() =>
+        lista = await Http.GetFromJsonAsync<List<TransferenciaCompletaDto>>(
+            $"api/transferencias/detalle?idUsuario={idUsuario}") ?? new();
+
+    private void Nueva()
+    {
+        item = new() { IdUsuario = idUsuario, Fecha = DateTime.Today };
+        mensaje = null; error = null; abierto = true;
+    }
+
+    private void Editar(TransferenciaCompletaDto x)
+    {
+        item = new()
+        {
+            IdTransferencia = x.IdTransferencia, IdTransaccion = x.IdTransaccion, IdUsuario = x.IdUsuario,
+            IdCuentaOrigen = x.IdCuentaOrigen, IdCuentaDestino = x.IdCuentaDestino, Monto = x.Monto,
+            Fecha = x.Fecha, Descripcion = x.Descripcion, Estado = x.Estado
+        };
+        mensaje = null; error = null; abierto = true;
+    }
+
+    private void Cerrar()
+    {
+        abierto = false;
+        error = null;
+    }
+
+    private async Task Guardar()
+    {
+        error = null;
+
+        if (item.IdCuentaOrigen == item.IdCuentaDestino)
+        {
+            error = "La cuenta de origen y la de destino deben ser distintas.";
+            return;
+        }
+
+        cargando = true;
+        try
+        {
+            var nuevo = EsNuevo;
+            var respuesta = nuevo
+                ? await Http.PostAsJsonAsync("api/transferencias/detalle", item)
+                : await Http.PutAsJsonAsync($"api/transferencias/detalle/{item.IdTransferencia}", item);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                abierto = false;
+                mensaje = nuevo ? "Transferencia creada correctamente." : "Transferencia actualizada correctamente.";
+                await Cargar();
+            }
+            else
+            {
+                error = await ApiErrores.LeerAsync(respuesta);
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task Eliminar(TransferenciaCompletaDto x)
+    {
+        mensaje = null;
+        error = null;
+
+        if (!await JS.InvokeAsync<bool>("confirm",
+                $"¿Eliminar la transferencia de {NombreCuenta(x.IdCuentaOrigen)} a {NombreCuenta(x.IdCuentaDestino)}?"))
+            return;
+
+        try
+        {
+            var respuesta = await Http.DeleteAsync($"api/transferencias/detalle/{x.IdTransferencia}");
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Transferencia eliminada correctamente.";
+                await Cargar();
+            }
+            else
+            {
+                error = await ApiErrores.LeerAsync(respuesta);
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Error: {ex.Message}";
+        }
+    }
+}

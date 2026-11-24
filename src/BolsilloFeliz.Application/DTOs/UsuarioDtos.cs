@@ -38,3 +38,12 @@ public class CambiarPasswordDto
     [Required, StringLength(100, MinimumLength = 8)]
     public string PasswordNueva { get; set; } = null!;
 }
+
+public class LoginDto
+{
+    [Required(ErrorMessage = "El email es obligatorio.")]
+    public string Email { get; set; } = "";
+
+    [Required(ErrorMessage = "La contraseña es obligatoria.")]
+    public string Password { get; set; } = "";
+}

@@ -58,3 +58,39 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* ---- Home ---- */
+.home-panel {
+    background-color: #e9ecef;
+    border-radius: 1.25rem;
+    padding: 1rem;
+}
+
+.home-saldos {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 1rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.saldo-card {
+    flex: 0 0 auto;
+    width: 12rem;
+    background-color: #fff;
+    border-radius: 1rem;
+    padding: .9rem 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+}
+
+.saldo-monto {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-top: .25rem;
+}
+
+.home-movimientos {
+    height: 55vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
