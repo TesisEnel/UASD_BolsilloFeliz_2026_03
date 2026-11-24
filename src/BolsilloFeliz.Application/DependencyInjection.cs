@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<PresupuestosService>();
         services.AddScoped<TransaccionesService>();
         services.AddScoped<TransferenciasService>();
+        services.AddScoped<DashboardService>();   
 
         return services;
     }

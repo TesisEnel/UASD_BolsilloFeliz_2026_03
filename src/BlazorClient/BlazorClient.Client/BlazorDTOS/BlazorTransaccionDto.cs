@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace BlazorClient.Client.BlazorDTOS;
 
@@ -10,9 +10,10 @@ public class TransaccionDto
     public int? IdCuenta { get; set; }
     public int? IdCategoria { get; set; }
 
-    [Required, StringLength(120)]
+    [Required(ErrorMessage = "El nombre es obligatorio."), StringLength(120)]
     public string Nombre { get; set; } = "";
 
+    [Range(0.01, 922337203685477, ErrorMessage = "El monto debe ser mayor que cero.")]
     public decimal Monto { get; set; }
 
     public string Tipo { get; set; } = "Gasto";
