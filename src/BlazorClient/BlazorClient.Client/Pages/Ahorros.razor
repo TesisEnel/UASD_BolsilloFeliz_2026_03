@@ -94,8 +94,25 @@ else if (metas.Count == 0)
 }
 else
 {
+        <div class="row g-2 mb-3">
+        <div class="col-auto">
+            <label class="form-label mb-0 small">Ordenar por</label>
+            <select class="form-select" @bind="orden">
+                <option value="objetivo">Fecha objetivo más cercana</option>
+                <option value="reciente">Más recientes primero</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <label class="form-label mb-0 small">Estado</label>
+            <select class="form-select" @bind="filtroEstado">
+                <option value="">Todas</option>
+                <option value="activas">Activas</option>
+                <option value="inactivas">Inactivas</option>
+            </select>
+        </div>
+    </div>
     <div class="table-responsive">
-        <table class="table table-striped align-middle">
+        <table class="table table-striped table-hover align-middle">
             <thead>
                 <tr>
                     
@@ -110,7 +127,7 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var x in metas)
+                @foreach (var x in MetasFiltradas)
                 {
                     <tr class="@(seleccionada?.IdMetaAhorro == x.IdMetaAhorro ? "table-active" : "")">
                         <td>@x.Nombre</td>
@@ -123,7 +140,7 @@ else
                             </div>
                         </td>
                         <td>@(x.FechaObjetivo?.ToString("dd/MM/yyyy"))</td>
-                        <td>@(x.Estado ? "Activa" : "Inactiva")</td>
+                        <td><span class="badge @(x.Estado ? "bg-success" : "bg-secondary")">@(x.Estado ? "Activa" : "Inactiva")</span></td>
                         <td class="text-end text-nowrap">
                             <button class="btn btn-sm btn-outline-success" @onclick="() => Seleccionar(x)">Aportes</button>
                             <button class="btn btn-sm btn-outline-primary ms-1" @onclick="() => EditarMeta(x)">Editar</button>
@@ -217,6 +234,26 @@ else
 
 @code {
     private List<MetaAhorroDto> metas = new();
+        private string orden = "objetivo";
+    private string filtroEstado = "";
+
+    private IEnumerable<MetaAhorroDto> MetasFiltradas
+    {
+        get
+        {
+            var q = metas.AsEnumerable();
+
+            if (filtroEstado == "activas")
+                q = q.Where(x => x.Estado);
+            else if (filtroEstado == "inactivas")
+                q = q.Where(x => !x.Estado);
+
+            return orden == "reciente"
+                ? q.OrderByDescending(x => x.FechaInicio)
+                : q.OrderBy(x => x.FechaObjetivo == null)
+                   .ThenBy(x => x.FechaObjetivo);
+        }
+    }
     private List<AporteAhorroDto> aportes = new();
     private List<MonedaDto> monedas = new();
 
