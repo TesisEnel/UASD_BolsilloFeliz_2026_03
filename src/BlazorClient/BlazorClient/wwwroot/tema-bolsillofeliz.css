@@ -1,0 +1,228 @@
+/* ==========================================================================
+   Tema visual BolsilloFeliz
+   Colores tomados del logo. Se carga DESPUÉS de app.css y de
+   BlazorClient.styles.css (ver App.razor), así no hay que editar los
+   estilos que ya existen.
+   ========================================================================== */
+
+:root,
+[data-bs-theme="light"] {
+    /* Paleta del logo */
+    --bf-navy: #001C44;         /* "Bolsillo" */
+    --bf-green: #15A64D;        /* "Feliz" y barras */
+    --bf-green-dark: #0E7C39;
+    --bf-forest: #14451F;       /* menú lateral (ya existente) */
+    --bf-forest-deep: #0B2E13;  /* barra superior (ya existente) */
+    --bf-mint: #ABDCB5;         /* fondo del logo */
+    --bf-mint-soft: #EAF6EE;    /* fondo de la aplicación */
+    --bf-pink: #FE9790;         /* cerdito */
+    --bf-gold: #FCB523;         /* moneda */
+
+    /* Bootstrap usa estas variables en botones, badges, enlaces y barras */
+    --bs-primary: #15A64D;
+    --bs-primary-rgb: 21, 166, 77;
+    --bs-success: #15A64D;
+    --bs-success-rgb: 21, 166, 77;
+    --bs-warning: #FCB523;
+    --bs-warning-rgb: 252, 181, 35;
+    --bs-link-color: #0E7C39;
+    --bs-link-color-rgb: 14, 124, 57;
+    --bs-link-hover-color: #0B6B30;
+    --bs-link-hover-color-rgb: 11, 107, 48;
+}
+
+/* ---- Base ---------------------------------------------------------------- */
+html, body {
+    font-family: 'Nunito', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bf-mint-soft);
+    color: #1f2d3d;
+}
+
+h1, h2, h3, h4, h5, .card-title {
+    color: var(--bf-navy);
+    font-weight: 800;
+}
+
+a, .btn-link { color: var(--bf-green-dark); }
+a:hover      { color: #0B6B30; }
+
+/* ---- Botones ------------------------------------------------------------- */
+.btn {
+    border-radius: .6rem;
+    font-weight: 600;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: var(--bf-green-dark);   /* verde un poco más oscuro: el texto blanco se lee bien */
+    border-color: var(--bf-green-dark);
+}
+
+.btn-primary:hover,
+.btn-primary:focus-visible,
+.btn-primary:active {
+    color: #fff;
+    background-color: #0B6B30;
+    border-color: #0B6B30;
+}
+
+/* "Editar" en azul marino (el rojo de Eliminar se queda igual) */
+.btn-outline-primary {
+    --bs-btn-color: var(--bf-navy);
+    --bs-btn-border-color: var(--bf-navy);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--bf-navy);
+    --bs-btn-hover-border-color: var(--bf-navy);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--bf-navy);
+    --bs-btn-active-border-color: var(--bf-navy);
+}
+
+/* Anillo de enfoque verde (antes era azul) */
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    box-shadow: 0 0 0 .1rem #fff, 0 0 0 .25rem rgba(21, 166, 77, .45);
+}
+
+.form-control:focus,
+.form-select:focus { border-color: var(--bf-green); }
+
+.form-check-input:checked {
+    background-color: var(--bf-green);
+    border-color: var(--bf-green);
+}
+
+/* ---- Formularios, tarjetas y avisos -------------------------------------- */
+.form-label {
+    font-weight: 600;
+    font-size: .9rem;
+    color: var(--bf-navy);
+}
+
+.form-control, .form-select { border-color: #cfe3d5; }
+
+.card {
+    border: 1px solid rgba(0, 28, 68, .08);
+    border-radius: 1rem;
+    box-shadow: 0 4px 14px rgba(0, 28, 68, .06);
+}
+
+.modal-content { border: 0; border-radius: 1rem; }
+.alert         { border-radius: .8rem; }
+
+.badge {
+    border-radius: 2rem;
+    font-weight: 700;
+    padding: .4em .75em;
+}
+
+/* ---- Tablas -------------------------------------------------------------- */
+.table {
+    --bs-table-striped-bg: rgba(21, 166, 77, .06);
+    --bs-table-hover-bg: rgba(21, 166, 77, .12);
+}
+
+.table > thead th {
+    color: var(--bf-navy);
+    font-weight: 700;
+    border-bottom: 2px solid var(--bf-mint);
+}
+
+/* ---- Menú lateral y barra superior --------------------------------------- */
+body .page .sidebar {
+    background-color: var(--bf-forest);
+    background-image: linear-gradient(180deg, #14451F 0%, #0E3318 100%);
+}
+
+body .page .top-row {
+    background-color: var(--bf-forest-deep);
+    border-bottom: 3px solid var(--bf-green);
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+}
+
+.brand-logo {
+    height: 40px;
+    width: auto;
+    display: block;
+}
+
+body .nav-item .nav-link {
+    border-radius: .6rem;
+    font-weight: 600;
+    transition: background-color .15s ease;
+}
+
+body .nav-item .nav-link:hover {
+    background-color: rgba(255, 255, 255, .08) !important;
+    color: #fff;
+}
+
+/* Opción activa: fondo suave y barrita dorada (la moneda del logo) */
+body .nav-item .nav-link.active {
+    background-color: rgba(255, 255, 255, .14) !important;
+    box-shadow: inset 4px 0 0 var(--bf-gold) !important;
+    color: #fff;
+}
+
+/* ---- Inicio (panel de Winiffer) ------------------------------------------ */
+.home-panel { background-color: #DDF1E4; }
+
+.saldo-card { border-top: 4px solid var(--bf-green); }
+
+/* ---- Estructura: menú a la izquierda, contenido a la derecha -------------- */
+@media (min-width: 641px) {
+    body .page {
+        display: flex;
+        flex-direction: row;
+    }
+
+    body .page > main {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+/* ---- Íconos del menú: centrados y de tamaño acorde al texto --------------- */
+body .nav-item .nav-link {
+    font-size: .95rem;
+}
+
+body .nav-item .nav-link > .bi {
+    position: static !important;
+    top: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+    margin-right: .75rem !important;
+    line-height: 1 !important;
+    font-size: 1.3rem;
+}
+
+body .nav-item .nav-link > .bi::before {
+    display: block;
+    line-height: 1;
+    vertical-align: 0;
+}
+
+/* ---- Barra superior un poco más alta para que el logo se lea mejor -------- */
+body .page .top-row { height: 4.5rem; }
+
+.brand-logo { height: 52px; }
+
+@media (min-width: 641px) {
+    body .nav-scrollable { height: calc(100vh - 4.5rem); }
+}
