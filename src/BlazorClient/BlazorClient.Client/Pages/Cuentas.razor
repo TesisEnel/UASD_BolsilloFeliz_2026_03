@@ -38,7 +38,18 @@
                 <div class="d-flex align-items-center gap-3 px-2 py-3 border-bottom">
                     <div style="flex:1; min-width:0;">
                         <div class="fw-semibold text-truncate">@x.Nombre</div>
-                        <div class="text-muted small text-truncate">@x.Tipo, @CodigoMoneda(x.IdMoneda) @x.SaldoInicial.ToString("N2")@(string.IsNullOrWhiteSpace(x.Descripcion) ? "" : ", " + x.Descripcion)</div>
+                        <div class="text-muted small text-truncate">@x.Tipo@(string.IsNullOrWhiteSpace(x.Descripcion) ? "" : ", " + x.Descripcion)</div>
+                    </div>
+                    <div class="text-end" style="min-width:170px;">
+                        <div class="small text-muted">Saldo actual</div>
+                        @if (saldos.TryGetValue(x.IdCuenta, out var saldo))
+                        {
+                            <div class="fw-semibold @(saldo < 0 ? "text-danger" : "text-success")">@CodigoMoneda(x.IdMoneda) @saldo.ToString("N2")</div>
+                        }
+                        else
+                        {
+                            <div class="fw-semibold text-muted">—</div>
+                        }
                     </div>
                     <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => Editar(x)">Editar</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(x)">Eliminar</button>
@@ -92,7 +103,7 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Saldo inicial</label>
+                            <label class="form-label">Saldo de apertura</label>
                             <InputNumber class="form-control" @bind-Value="item.SaldoInicial" />
                         </div>
                         <div>
@@ -123,6 +134,9 @@
     private List<CuentaDto>? lista;
     private List<MonedaDto> monedas = new();
     private CuentaDto item = new();
+
+    // Saldo actual por cuenta, calculado por la API (apertura + transacciones completadas + transferencias)
+    private Dictionary<int, decimal> saldos = new();
 
     private bool EsNuevo => item.IdCuenta == 0;
     private int IdItem => item.IdCuenta;
@@ -156,8 +170,13 @@
         }
     }
 
-    private async Task Cargar() =>
+    private async Task Cargar()
+    {
         lista = await Http.GetFromJsonAsync<List<CuentaDto>>($"api/cuentas?idUsuario={idUsuario}") ?? new();
+
+        var dashboard = await Http.GetFromJsonAsync<DashboardDto>($"api/dashboard?idUsuario={idUsuario}");
+        saldos = dashboard?.Saldos.ToDictionary(s => s.IdCuenta, s => s.Saldo) ?? new();
+    }
 
     private void Nueva()
     {
